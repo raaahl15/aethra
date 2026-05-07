@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aethra Health Suite</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <!-- Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+    <!-- React & Babel via CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "inverse-surface": "#d4e4fa", "surface-container-lowest": "#010f1f", "primary-fixed-dim": "#c0c6de",
+                        "on-secondary-fixed": "#002022", "primary-fixed": "#dce1fb", "on-tertiary-fixed": "#001d34",
+                        "on-primary-container": "#72778d", "outline-variant": "#46464c", "on-primary": "#2a3043",
+                        "outline": "#909097", "surface": "#051424", "surface-variant": "#273647", "primary": "#c0c6de",
+                        "on-error": "#690005", "secondary-container": "#00f1fd", "on-surface-variant": "#c6c6cd",
+                        "surface-tint": "#c0c6de", "surface-dim": "#051424", "on-tertiary-container": "#007cc9",
+                        "on-secondary-fixed-variant": "#004f53", "on-tertiary-fixed-variant": "#004a7a",
+                        "inverse-primary": "#585e73", "on-surface": "#d4e4fa", "secondary-fixed": "#6ff6ff",
+                        "on-primary-fixed-variant": "#40465a", "surface-bright": "#2c3a4c", "error-container": "#93000a",
+                        "surface-container": "#122131", "tertiary-fixed": "#d0e4ff", "on-background": "#d4e4fa",
+                        "surface-container-high": "#1c2b3c", "background": "#051424", "on-secondary": "#00373a",
+                        "inverse-on-surface": "#233143", "secondary": "#dcfdff", "surface-container-low": "#0d1c2d",
+                        "on-error-container": "#ffdad6", "on-secondary-container": "#006a6f", "tertiary-container": "#000712",
+                        "secondary-fixed-dim": "#00dce6", "tertiary-fixed-dim": "#9bcbff", "surface-container-highest": "#273647",
+                        "on-tertiary": "#003256", "primary-container": "#020617", "on-primary-fixed": "#151b2d",
+                        "error": "#ffb4ab", "tertiary": "#9bcbff"
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                    spacing: { "margin-x": "40px", "stack-gap": "16px", "container-max": "1440px", "gutter": "24px", "unit": "8px", "card-padding": "24px" },
+                    fontFamily: {
+                        "h1": ["Space Grotesk", "sans-serif"], "data-display": ["Space Grotesk", "sans-serif"],
+                        "label-caps": ["Space Grotesk", "sans-serif"], "h2": ["Space Grotesk", "sans-serif"],
+                        "h3": ["Space Grotesk", "sans-serif"], "body-md": ["Manrope", "sans-serif"],
+                        "body-lg": ["Manrope", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body { background-color: #051424; color: #d4e4fa; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .fill-icon { font-variation-settings: 'FILL' 1; }
+        
+        /* Glassmorphism Styles */
+        .glass-panel, .glass-card {
+            background: linear-gradient(135deg, rgba(39, 54, 71, 0.4) 0%, rgba(5, 20, 36, 0.6) 100%);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 32px 64px rgba(0, 0, 0, 0.5), inset 1px 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        .glass-input, .input-glass {
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            background: rgba(5, 20, 36, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        .glass-input:focus, .input-glass:focus-within {
+            border-color: #00f1fd;
+            box-shadow: 0 0 12px rgba(0, 241, 253, 0.3);
+            outline: none;
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, #00dce6 0%, #007cc9 100%);
+            box-shadow: 0 4px 16px rgba(0, 220, 230, 0.3);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            box-shadow: 0 6px 24px rgba(0, 220, 230, 0.5);
+            transform: translateY(-1px);
+        }
+        
+        /* Background Effects */
+        .bg-blob { position: absolute; border-radius: 50%; filter: blur(80px); z-index: 0; opacity: 0.4; }
+        .bg-glob-1 { background: radial-gradient(circle, rgba(0,241,253,0.15) 0%, rgba(5,20,36,0) 70%); width: 800px; height: 800px; position: absolute; top: -200px; left: -200px; border-radius: 50%; z-index: -1; filter: blur(60px); }
+        .bg-glob-2 { background: radial-gradient(circle, rgba(0,124,201,0.15) 0%, rgba(5,20,36,0) 70%); width: 600px; height: 600px; position: absolute; bottom: -100px; right: -100px; border-radius: 50%; z-index: -1; filter: blur(50px); }
+        .bg-gradient-glow { background: radial-gradient(circle at center, rgba(0, 241, 253, 0.15) 0%, transparent 70%); }
+        .neon-glow { box-shadow: 0 0 8px currentColor; }
+        .neon-glow-cyan { box-shadow: 0 0 15px rgba(0, 220, 230, 0.5); }
+        .gradient-text { background: linear-gradient(90deg, #dcfdff 0%, #00dce6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #010f1f; }
+        ::-webkit-scrollbar-thumb { background: #273647; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #46464c; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- Modul Firebase ES6 (Harus dipisah agar bisa dibaca Babel) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Ekspos fungsi Firebase ke window agar React bisa memakainya
+        window.fbInitializeApp = initializeApp;
+        window.fbGetFirestore = getFirestore;
+        window.fbCollection = collection;
+        window.fbAddDoc = addDoc;
+        window.fbGetDocs = getDocs;
+        window.fbQuery = query;
+        window.fbWhere = where;
+        window.fbOnSnapshot = onSnapshot;
+
+        // Beri sinyal ke React bahwa Firebase siap
+        window.dispatchEvent(new Event('firebaseLoaded'));
+    </script>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- PAGE: LOGIN ---
+        const LoginPage = ({ navigate, onLogin }) => {
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [errorMsg, setErrorMsg] = useState('');
+            const [isLoading, setIsLoading] = useState(false);
+
+            const handleLogin = async (e) => {
+                e.preventDefault();
+                if(!email || !password) {
+                    setErrorMsg('Email dan Password harus diisi.');
+                    return;
+                }
+                setIsLoading(true);
+                const success = await onLogin(email, password);
+                setIsLoading(false);
+                
+                if (success) {
+                    navigate('home');
+                } else {
+                    setErrorMsg('Email atau Password salah, atau akun belum terdaftar.');
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex items-center justify-center relative overflow-hidden font-body-md w-full">
+                    <div className="bg-blob w-[600px] h-[600px] bg-[#004a7a] -top-32 -left-32"></div>
+                    <div className="bg-blob w-[500px] h-[500px] bg-[#004f53] bottom-0 right-0"></div>
+                    
+                    <div className="relative z-10 w-full max-w-md px-gutter">
+                        <div className="glass-panel rounded-xl p-8 sm:p-10 w-full">
+                            <div className="text-center mb-10">
+                                <h1 className="font-h2 text-h2 text-secondary mb-2 tracking-tight">Aethra</h1>
+                                <p className="font-body-md text-body-md text-on-surface-variant">Secure System Access</p>
+                            </div>
+                            
+                            {errorMsg && (
+                                <div className="mb-6 p-3 bg-error-container/20 border border-error/50 rounded-lg text-center animate-pulse">
+                                    <p className="text-error text-sm font-medium">{errorMsg}</p>
+                                </div>
+                            )}
+
+                            <form className="space-y-6" onSubmit={handleLogin}>
+                                <div className="space-y-2">
+                                    <label className="block font-label-caps text-label-caps text-on-surface-variant uppercase">Email Operatif</label>
+                                    <div className="relative">
+                                        <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant">person</span>
+                                        <input 
+                                            className="glass-input w-full rounded-lg pl-12 pr-4 py-3 text-on-surface placeholder-on-surface-variant/50 font-body-md bg-transparent" 
+                                            placeholder="Masukkan email..." 
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="block font-label-caps text-label-caps text-on-surface-variant uppercase">Passcode</label>
+                                    <div className="relative">
+                                        <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant">lock</span>
+                                        <input 
+                                            className="glass-input w-full rounded-lg pl-12 pr-4 py-3 text-on-surface placeholder-on-surface-variant/50 font-body-md bg-transparent" 
+                                            placeholder="••••••••" 
+                                            type="password"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                                <button disabled={isLoading} className="btn-primary w-full rounded-lg py-4 font-h3 text-h3 text-surface-container-lowest font-bold mt-8 flex justify-center items-center gap-2" type="submit">
+                                    {isLoading ? 'Verifikasi...' : 'Initialize Session'}
+                                    <span className="material-symbols-outlined fill-icon">login</span>
+                                </button>
+                            </form>
+                            <div className="mt-8 text-center border-t border-white/10 pt-6">
+                                <p className="font-body-md text-body-md text-on-surface-variant">
+                                    Unregistered operative? 
+                                    <a onClick={() => navigate('signup')} className="text-secondary-fixed-dim hover:text-secondary-fixed font-bold transition-colors ml-1 cursor-pointer">Request Clearance</a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- STREAMING_CHUNK:Rendering Sign Up Form... ---
+        // --- PAGE: SIGN UP ---
+        const SignUpPage = ({ navigate, onSignUp }) => {
+            const [fullName, setFullName] = useState('');
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [errorMsg, setErrorMsg] = useState('');
+            const [isLoading, setIsLoading] = useState(false);
+
+            const handleSignUp = async (e) => {
+                e.preventDefault();
+                if(!fullName || !email || !password) {
+                    setErrorMsg('Semua kolom harus diisi.');
+                    return;
+                }
+                if(password.length < 6) {
+                    setErrorMsg('Password minimal 6 karakter.');
+                    return;
+                }
+                
+                setIsLoading(true);
+                const success = await onSignUp(fullName, email, password);
+                setIsLoading(false);
+
+                if (success) {
+                    navigate('home');
+                } else {
+                    setErrorMsg('Pendaftaran gagal. Email ini mungkin sudah terdaftar.');
+                }
+            };
+
+            return (
+                <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-gutter w-full">
+                    <div className="bg-glob-1 pointer-events-none"></div>
+                    <div className="bg-glob-2 pointer-events-none"></div>
+                    <div className="w-full max-w-md">
+                        <div className="glass-card rounded-2xl p-8 flex flex-col gap-8 relative z-10">
+                            <div className="text-center space-y-2">
+                                <h1 className="font-h2 text-h2 text-secondary">Aethra</h1>
+                                <p className="font-body-md text-body-md text-on-surface-variant">Clinical Data Registration</p>
+                            </div>
+
+                            {errorMsg && (
+                                <div className="p-3 bg-error-container/20 border border-error/50 rounded-lg text-center">
+                                    <p className="text-error text-sm font-medium">{errorMsg}</p>
+                                </div>
+                            )}
+
+                            <form className="flex flex-col gap-6" onSubmit={handleSignUp}>
+                                <div className="flex flex-col gap-2">
+                                    <label className="font-label-caps text-label-caps text-primary">Nama Lengkap</label>
+                                    <div className="input-glass rounded-lg flex items-center px-4 py-3">
+                                        <span className="material-symbols-outlined text-on-surface-variant mr-3">person</span>
+                                        <input 
+                                            className="bg-transparent border-none outline-none text-on-surface w-full font-body-md placeholder-on-surface-variant/50 focus:ring-0 p-0" 
+                                            placeholder="Masukkan nama Anda" 
+                                            type="text"
+                                            value={fullName}
+                                            onChange={(e) => setFullName(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    <label className="font-label-caps text-label-caps text-primary">Email Operatif</label>
+                                    <div className="input-glass rounded-lg flex items-center px-4 py-3">
+                                        <span className="material-symbols-outlined text-on-surface-variant mr-3">badge</span>
+                                        <input 
+                                            className="bg-transparent border-none outline-none text-on-surface w-full font-body-md placeholder-on-surface-variant/50 focus:ring-0 p-0" 
+                                            placeholder="Masukkan email" 
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    <label className="font-label-caps text-label-caps text-primary">Kata Sandi</label>
+                                    <div className="input-glass rounded-lg flex items-center px-4 py-3">
+                                        <span className="material-symbols-outlined text-on-surface-variant mr-3">lock</span>
+                                        <input 
+                                            className="bg-transparent border-none outline-none text-on-surface w-full font-body-md placeholder-on-surface-variant/50 focus:ring-0 p-0" 
+                                            placeholder="••••••••" 
+                                            type="password"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                                <button disabled={isLoading} className="w-full mt-4 bg-gradient-to-r from-secondary-container to-tertiary-container text-on-secondary-container font-h3 text-[18px] py-4 rounded-lg neon-glow transition-all hover:brightness-110 flex justify-center items-center gap-2" type="submit">
+                                    {isLoading ? 'Menyimpan...' : 'Buat Akun'}
+                                    <span className="material-symbols-outlined">arrow_forward</span>
+                                </button>
+                            </form>
+                            <div className="text-center pt-2">
+                                <p className="font-body-md text-body-md text-on-surface-variant">
+                                    Sudah punya akun? 
+                                    <a onClick={() => navigate('login')} className="text-secondary hover:text-secondary-fixed transition-colors font-medium ml-1 cursor-pointer">Masuk</a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- STREAMING_CHUNK:Rendering Info Pages... ---
+        // --- COMPONENT: TOP HEADER ---
+        const TopHeader = ({ navigate, currentUser }) => (
+            <header className="fixed z-50 bg-surface/60 backdrop-blur-xl border-b border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] flex justify-between items-center w-full px-margin-x h-20 top-0 left-0">
+                <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('home')}>
+                    <span className="material-symbols-outlined text-secondary" style={{ fontVariationSettings: "'FILL' 1" }}>vital_signs</span>
+                    <span className="font-h2 text-h2 font-bold text-secondary tracking-tight">Aethra</span>
+                </div>
+                <div className="flex items-center gap-gutter">
+                    <button className="text-primary hover:bg-white/5 transition-colors p-2 rounded-full flex items-center justify-center relative">
+                        <span className="material-symbols-outlined">notifications</span>
+                    </button>
+                    <div className="hidden sm:block text-right mr-2">
+                        <p className="font-body-md text-body-md text-on-surface font-medium truncate max-w-[150px]">{currentUser ? currentUser.fullName : 'Guest'}</p>
+                        <p className="font-label-caps text-label-caps text-on-surface-variant truncate max-w-[150px]">{currentUser ? currentUser.email : 'No Access'}</p>
+                    </div>
+                    <div className="w-10 h-10 rounded-full bg-surface-variant border border-white/10 overflow-hidden cursor-pointer" onClick={() => navigate('dashboard')}>
+                        <img alt="Profile" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBD9vhiyCYvCEI5lVEbe1Crxq9NHOliFMPLkB0CPkHJCKxteAR-JE_GrKmRnUH9m7WTXV0AssXawhdooWFgscwp3Y5I4JgRdgBoWMbeNNgP_p-XwJAdN453UJNfZwpG_f7N-bic_9DW48wq5aBX7ihlwNJtj2MCJ2fXT967ZM2M9fd5l5qHkOPIBWLJO0OAOMtaYaBDdBvFgnhnMKWsvFsqFWZhH6u-g6wXQJLRNHqkJ_qvwKjmqkw-b-KsZ0H7eUSOkGI56ij8o6s" />
+                    </div>
+                </div>
+            </header>
+        );
+
+        // --- PAGE: HOME ---
+        const HomePage = ({ navigate, currentUser }) => (
+            <div className="min-h-screen overflow-x-hidden flex flex-col relative selection:bg-secondary selection:text-surface-container-lowest w-full">
+                <div className="absolute top-0 left-1/4 w-[800px] h-[800px] bg-gradient-glow rounded-full blur-[100px] -z-10 pointer-events-none transform -translate-x-1/2 -translate-y-1/4"></div>
+                <TopHeader navigate={navigate} currentUser={currentUser} />
+                
+                <main className="flex-grow flex flex-col pt-32 pb-margin-x px-margin-x max-w-container-max mx-auto w-full z-10">
+                    <div className="mb-12">
+                        <h1 className="font-h1 text-h1 text-on-surface mb-2">Welcome back to Aethra Health Monitoring.</h1>
+                        <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">Secure, real-time biomedical diagnostics and sensor-to-cloud analytics suite.</p>
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-gutter flex-grow">
+                        <div className="glass-card rounded-xl p-card-padding flex flex-col justify-between min-h-[500px] group hover:border-white/20 transition-all duration-300">
+                            <div>
+                                <div className="flex items-center gap-3 mb-6">
+                                    <span className="material-symbols-outlined text-secondary" style={{ fontVariationSettings: "'FILL' 1" }}>biotech</span>
+                                    <h2 className="font-h2 text-h2 text-on-surface">About Aethra</h2>
+                                </div>
+                                <p className="font-body-lg text-body-lg text-on-surface-variant mb-6 leading-relaxed">
+                                    Aethra represents the pinnacle of digital clinical integration. Our proprietary sensor-to-cloud architecture ensures absolute precision in continuous patient monitoring.
+                                </p>
+                            </div>
+                            <button onClick={() => navigate('about')} className="mt-8 flex items-center gap-2 text-primary hover:text-secondary font-label-caps text-label-caps transition-colors w-fit border border-white/10 px-6 py-3 rounded-full hover:bg-white/5">
+                                View Documentation
+                                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                            </button>
+                        </div>
+                        <div className="glass-card rounded-xl p-card-padding flex flex-col items-center justify-center text-center min-h-[500px] relative overflow-hidden group">
+                            <div className="absolute inset-0 bg-gradient-to-t from-surface-container-lowest/80 to-transparent"></div>
+                            <div className="relative z-10 flex flex-col items-center">
+                                <div className="w-24 h-24 rounded-full border border-secondary/30 flex items-center justify-center mb-8 relative shadow-[0_0_40px_rgba(0,241,253,0.1)]">
+                                    <div className="absolute inset-0 rounded-full border border-secondary/50 animate-[ping_3s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
+                                    <span className="material-symbols-outlined text-secondary text-[48px]">vital_signs</span>
+                                </div>
+                                <h2 className="font-data-display text-data-display text-on-surface mb-8 tracking-tight">System Ready</h2>
+                                <button onClick={() => navigate('dashboard')} className="bg-gradient-to-r from-secondary to-[#00c6d4] text-surface-container-lowest font-label-caps text-label-caps px-10 py-5 rounded-full flex items-center gap-3 hover:shadow-[0_0_24px_rgba(0,241,253,0.4)] transition-all duration-300 transform hover:-translate-y-1">
+                                    Start Aethra
+                                    <span className="material-symbols-outlined">login</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        );
+
+        const AboutPage = ({ navigate, currentUser }) => (
+            <div className="min-h-screen antialiased flex flex-col relative overflow-x-hidden w-full">
+                <TopHeader navigate={navigate} currentUser={currentUser} />
+                <main className="flex-grow pt-32 pb-24 px-margin-x max-w-[1440px] mx-auto w-full flex flex-col gap-16 relative">
+                    <section className="flex flex-col md:flex-row gap-12 items-center min-h-[614px]">
+                        <div className="flex-1 flex flex-col gap-6 z-10">
+                            <h1 className="font-h1 text-h1 text-on-surface">Precision Intelligence for <br/><span className="gradient-text">Biomedical Diagnostics</span></h1>
+                            <p className="font-body-lg text-body-lg text-on-surface-variant max-w-2xl leading-relaxed">
+                                Aethra represents the convergence of proprietary biometric hardware and advanced cloud analytics. We provide zero-latency monitoring ecosystems designed for the absolute precision demanded by modern clinical environments.
+                            </p>
+                            <div className="flex gap-4 mt-4">
+                                <button onClick={() => navigate('dashboard')} className="bg-gradient-to-r from-secondary-container to-secondary-fixed text-on-secondary-container font-label-caps text-label-caps px-8 py-4 rounded-lg uppercase tracking-wider hover:opacity-90">
+                                    Start Monitoring
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+                </main>
+            </div>
+        );
+
+        // --- STREAMING_CHUNK:Rendering Admin and User Dashboards... ---
+        // --- PAGE: DASHBOARD ---
+        const DashboardPage = ({ navigate, currentUser, onLogout, usersList }) => {
+            const isAdmin = currentUser && currentUser.email === 'admin@aethra.com';
+            const [activeTab, setActiveTab] = useState(isAdmin ? 'admin_users' : 'dashboard');
+
+            // Mock Data Generator for Vitals
+            const getMockHealthData = (email) => {
+                const id = email ? email.length : 0;
+                const isWarning = id % 3 === 0;
+                return {
+                    hr: 70 + (id % 25),
+                    spo2: 94 + (id % 6),
+                    bp: `${110 + (id % 20)}/${70 + (id % 15)}`,
+                    status: isWarning ? 'Perlu Perhatian' : 'Optimal',
+                    color: isWarning ? 'text-error' : 'text-secondary-fixed',
+                    dotColor: isWarning ? 'bg-error' : 'bg-secondary-fixed'
+                };
+            };
+
+            return (
+                <div className="min-h-screen flex selection:bg-secondary-fixed selection:text-on-secondary-fixed antialiased w-full">
+                    {/* SIDEBAR NAVIGATION */}
+                    <nav className="bg-surface-container/40 backdrop-blur-2xl docked left-0 h-full w-72 border-r border-white/10 shadow-[4px_0_24px_rgba(0,0,0,0.5)] flex flex-col fixed left-0 top-0 py-8 z-50">
+                        <div className="px-8 mb-12 flex items-center gap-4 cursor-pointer" onClick={() => navigate('home')}>
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-secondary-fixed to-on-tertiary-container flex items-center justify-center shrink-0">
+                                <span className="material-symbols-outlined text-surface-container-lowest" style={{ fontVariationSettings: "'FILL' 1" }}>vital_signs</span>
+                            </div>
+                            <div>
+                                <h1 className="font-h3 text-h3 font-bold text-on-surface tracking-tight">Aethra</h1>
+                                <p className="font-label-caps text-label-caps text-on-surface-variant uppercase mt-1">
+                                    {isAdmin ? 'Admin Console' : 'Monitoring Suite'}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex-1 px-4 flex flex-col gap-2 font-body-md text-body-md">
+                            {isAdmin ? (
+                                <React.Fragment>
+                                    <div className="px-4 py-2 mb-2">
+                                        <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">Manajemen Sistem</span>
+                                    </div>
+                                    <a onClick={() => setActiveTab('admin_users')} className={`flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer transition-all ${activeTab === 'admin_users' ? 'text-secondary border-r-4 border-secondary bg-white/5' : 'text-on-surface-variant hover:text-secondary hover:bg-white/5'}`}>
+                                        <span className="material-symbols-outlined">group</span> Data Pengguna
+                                    </a>
+                                    <a onClick={() => setActiveTab('admin_reports')} className={`flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer transition-all ${activeTab === 'admin_reports' ? 'text-secondary border-r-4 border-secondary bg-white/5' : 'text-on-surface-variant hover:text-secondary hover:bg-white/5'}`}>
+                                        <span className="material-symbols-outlined">medical_information</span> Laporan Kesehatan
+                                    </a>
+                                </React.Fragment>
+                            ) : (
+                                <React.Fragment>
+                                    <a onClick={() => setActiveTab('dashboard')} className={`flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer transition-all ${activeTab === 'dashboard' ? 'text-secondary border-r-4 border-secondary bg-white/5' : 'text-on-surface-variant hover:text-secondary hover:bg-white/5'}`}>
+                                        <span className="material-symbols-outlined">dashboard</span> Dashboard
+                                    </a>
+                                    <a onClick={() => setActiveTab('history')} className={`flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer transition-all ${activeTab === 'history' ? 'text-secondary border-r-4 border-secondary bg-white/5' : 'text-on-surface-variant hover:text-secondary hover:bg-white/5'}`}>
+                                        <span className="material-symbols-outlined">history_edu</span> History & Logs
+                                    </a>
+                                </React.Fragment>
+                            )}
+                        </div>
+                        <div className="px-4 mt-auto">
+                            <a onClick={onLogout} className="flex items-center gap-4 px-4 py-3 rounded-lg text-error hover:bg-white/5 transition-all font-body-md text-body-md cursor-pointer">
+                                <span className="material-symbols-outlined">logout</span> Terminate Session
+                            </a>
+                        </div>
+                    </nav>
+
+                    {/* MAIN CONTENT AREA */}
+                    <main className="ml-72 flex-1 flex flex-col min-h-screen relative pb-12">
+                        {/* HEADER */}
+                        <header className="bg-surface/60 backdrop-blur-xl docked full-width top-0 border-b border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] flex justify-between items-center w-full px-margin-x h-20 sticky z-40">
+                            <div className="flex items-center gap-3">
+                                <div className="w-2 h-2 rounded-full text-secondary-fixed bg-current neon-glow"></div>
+                                <span className="font-label-caps text-label-caps text-secondary-fixed uppercase tracking-wider">System Online</span>
+                            </div>
+                            <div className="flex items-center gap-6">
+                                <div className="text-right">
+                                    <p className="font-body-md text-body-md text-on-surface font-medium truncate max-w-[150px]">{currentUser ? currentUser.fullName : 'Guest'}</p>
+                                    <p className="font-label-caps text-label-caps text-on-surface-variant truncate max-w-[150px]">{isAdmin ? 'Superadmin' : (currentUser ? currentUser.email : 'No Access')}</p>
+                                </div>
+                                <img alt="User profile" className="w-10 h-10 rounded-full border border-white/20 object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmQL6qFoTDahGzrW0eY20_oHwODujIu2sjs7kCWOkqyq7GmDK1oghgATEQcJQ-_5EKWWt3oIrZ5iBlevdxCVrlrYWv_Lt6-lMjOBTY7NT0uHumS6O1ugUMW6M6p4qGw3TF5Sloyb7W5xmvi_xKqg6k6yT9jTYDcReTqTBFSRqz8931laBhtX5xHuz45upxwYvEmHELV7G9xy2q3Nuolg8pJWpuIDnn2nuDf1XiJmr2rLysxHAsNsWIo3wvCJ0zTzPxBW2eXgbzowU" />
+                            </div>
+                        </header>
+
+                        <div className="p-margin-x max-w-container-max mx-auto w-full flex-1">
+                            
+                            {/* USER VIEW: DASHBOARD */}
+                            {!isAdmin && activeTab === 'dashboard' && (
+                                <React.Fragment>
+                                    <div className="flex justify-between items-end mb-8">
+                                        <div>
+                                            <h2 className="font-h2 text-h2 font-bold text-on-surface tracking-tight mb-2">Patient Overview</h2>
+                                            <p className="font-body-md text-body-md text-on-surface-variant">Real-time telemetry and metabolic indicators.</p>
+                                        </div>
+                                    </div>
+                                    <div className="glass-card rounded-xl p-card-padding flex flex-col shadow-[0_8px_32px_0_rgba(0,0,0,0.2)] mb-8">
+                                        <div className="flex justify-between items-center mb-6 border-b border-white/5 pb-4">
+                                            <div className="flex items-center gap-3">
+                                                <span className="material-symbols-outlined text-secondary-fixed">monitor_heart</span>
+                                                <h3 className="font-h3 text-h3 text-on-surface">Primary Vitals (Live)</h3>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-6 mb-8 flex-1">
+                                            <div className="flex flex-col">
+                                                <span className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">Heart Rate</span>
+                                                <div className="flex items-baseline gap-2">
+                                                    <span className="font-data-display text-data-display text-secondary-fixed">72</span>
+                                                    <span className="font-body-md text-body-md text-on-surface-variant">BPM</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col border-l border-white/5 pl-6">
+                                                <span className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">Blood Oxygen</span>
+                                                <div className="flex items-baseline gap-2 mb-4">
+                                                    <span className="font-data-display text-data-display text-on-surface">98</span>
+                                                    <span className="font-body-md text-body-md text-on-surface-variant">%</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col border-l border-white/5 pl-6">
+                                                <span className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">Est. Blood Pressure</span>
+                                                <div className="flex items-baseline gap-2">
+                                                    <span className="font-data-display text-[32px] text-on-surface">118<span className="text-[20px] text-on-surface-variant mx-1">/</span>76</span>
+                                                    <span className="font-body-md text-body-md text-on-surface-variant">mmHg</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </React.Fragment>
+                            )}
+
+                            {/* ADMIN VIEW: TAB DATA PENGGUNA */}
+                            {isAdmin && activeTab === 'admin_users' && (
+                                <React.Fragment>
+                                    <div className="flex justify-between items-end mb-8">
+                                        <div>
+                                            <h2 className="font-h2 text-h2 font-bold text-on-surface tracking-tight mb-2">Manajemen Data Pengguna</h2>
+                                            <p className="font-body-md text-body-md text-on-surface-variant">Melihat daftar kredensial operatif Aethra secara langsung dari Firestore.</p>
+                                        </div>
+                                    </div>
+                                    <div className="glass-card rounded-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.2)] overflow-hidden">
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left border-collapse">
+                                                <thead className="bg-surface-container/50 backdrop-blur-md">
+                                                    <tr className="border-b border-white/10 font-label-caps text-label-caps text-on-surface-variant uppercase">
+                                                        <th className="py-5 px-6 font-medium">Data Diri (Nama)</th>
+                                                        <th className="py-5 px-6 font-medium">Email Operatif</th>
+                                                        <th className="py-5 px-6 font-medium">Kata Sandi</th>
+                                                        <th className="py-5 px-6 font-medium">Status Akun</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="font-body-md text-body-md text-on-surface divide-y divide-white/5">
+                                                    {usersList.map((u, i) => (
+                                                        <tr key={i} className="hover:bg-white/5 transition-colors">
+                                                            <td className="py-4 px-6 font-medium text-primary-fixed">{u.fullName}</td>
+                                                            <td className="py-4 px-6 text-on-surface-variant">{u.email}</td>
+                                                            <td className="py-4 px-6 font-mono text-sm tracking-wider opacity-80">{u.password}</td>
+                                                            <td className="py-4 px-6">
+                                                                <span className={`px-3 py-1 rounded-full text-xs font-label-caps uppercase ${u.email === 'admin@aethra.com' ? 'bg-secondary/10 text-secondary' : 'bg-tertiary-fixed/10 text-tertiary-fixed'}`}>
+                                                                    {u.email === 'admin@aethra.com' ? 'Admin' : 'Terverifikasi'}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                    {usersList.length === 0 && (
+                                                        <tr>
+                                                            <td colSpan="4" className="py-12 text-center text-on-surface-variant">Belum ada data atau sedang menarik dari Cloud...</td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </React.Fragment>
+                            )}
+
+                            {/* ADMIN VIEW: TAB LAPORAN KESEHATAN */}
+                            {isAdmin && activeTab === 'admin_reports' && (
+                                <React.Fragment>
+                                    <div className="flex justify-between items-end mb-8">
+                                        <div>
+                                            <h2 className="font-h2 text-h2 font-bold text-on-surface tracking-tight mb-2">Laporan Kesehatan (Vitals)</h2>
+                                            <p className="font-body-md text-body-md text-on-surface-variant">Pemantauan metrik biomedis untuk semua pengguna terdaftar.</p>
+                                        </div>
+                                    </div>
+                                    <div className="glass-card rounded-xl shadow-[0_8px_32px_0_rgba(0,0,0,0.2)] overflow-hidden">
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left border-collapse">
+                                                <thead className="bg-surface-container/50 backdrop-blur-md">
+                                                    <tr className="border-b border-white/10 font-label-caps text-label-caps text-on-surface-variant uppercase">
+                                                        <th className="py-5 px-6 font-medium">Pengguna</th>
+                                                        <th className="py-5 px-6 font-medium">Heart Rate</th>
+                                                        <th className="py-5 px-6 font-medium">SpO2 (Oksigen)</th>
+                                                        <th className="py-5 px-6 font-medium">Tekanan Darah</th>
+                                                        <th className="py-5 px-6 font-medium">Status Kesehatan</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="font-body-md text-body-md text-on-surface divide-y divide-white/5">
+                                                    {usersList.map((u, i) => {
+                                                        const health = getMockHealthData(u.email);
+                                                        return (
+                                                            <tr key={i} className="hover:bg-white/5 transition-colors group">
+                                                                <td className="py-4 px-6">
+                                                                    <div className="font-medium text-primary-fixed">{u.fullName}</div>
+                                                                    <div className="text-sm text-on-surface-variant">{u.email}</div>
+                                                                </td>
+                                                                <td className="py-4 px-6">
+                                                                    <div className="flex items-baseline gap-1">
+                                                                        <span className="font-data-display text-[24px]">{health.hr}</span>
+                                                                        <span className="text-xs text-on-surface-variant">BPM</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="py-4 px-6">
+                                                                    <div className="flex items-baseline gap-1">
+                                                                        <span className="font-data-display text-[24px]">{health.spo2}</span>
+                                                                        <span className="text-xs text-on-surface-variant">%</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="py-4 px-6">
+                                                                    <div className="flex items-baseline gap-1">
+                                                                        <span className="font-data-display text-[24px]">{health.bp}</span>
+                                                                        <span className="text-xs text-on-surface-variant">mmHg</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="py-4 px-6">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className={`w-2 h-2 rounded-full ${health.dotColor} neon-glow`}></div>
+                                                                        <span className={`${health.color} font-label-caps uppercase text-[10px]`}>{health.status}</span>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                    {usersList.length === 0 && (
+                                                        <tr>
+                                                            <td colSpan="5" className="py-12 text-center text-on-surface-variant">Belum ada data atau sedang menarik dari Cloud...</td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </React.Fragment>
+                            )}
+                        </div>
+                    </main>
+                </div>
+            );
+        };
+
+        // --- STREAMING_CHUNK:Mounting Main Application logic... ---
+        // --- MAIN APP COMPONENT ---
+        const App = () => {
+            const [currentPage, setCurrentPage] = useState('login');
+            
+            // --- STATE DATABASE ---
+            const [users, setUsers] = useState([]); 
+            const [currentUser, setCurrentUser] = useState(null); 
+            const [dbReady, setDbReady] = useState(false);
+
+            // TODO: GANTI INI DENGAN FIREBASE CONFIG ANDA SENDIRI DARI CONSOLE.FIREBASE.GOOGLE.COM
+            const firebaseConfig = {
+                apiKey: "AIzaSyDDYYlbjYJd3aUH04xlNcVIwt-6FhuqDxg",
+                authDomain: "aethra-health.firebaseapp.com",
+                projectId: "aethra-health",
+                storageBucket: "aethra-health.firebasestorage.app",
+                messagingSenderId: "1092134542451",
+                appId: "1:1092134542451:web:b6a83dedfb562b37e4de06",
+                measurementId: "G-MP3R2GG8N2"
+            };
+
+            // 1. Inisialisasi Firebase Database
+            useEffect(() => {
+                const initFirebase = () => {
+                    if (window.fbInitializeApp && window.fbGetFirestore) {
+                        try {
+                            const app = window.fbInitializeApp(firebaseConfig);
+                            window.db = window.fbGetFirestore(app);
+                            setDbReady(true);
+                            console.log("Firebase berhasil dikoneksikan!");
+                        } catch (e) {
+                            console.error("Gagal menginisialisasi Firebase. Pastikan Config benar.", e);
+                        }
+                    }
+                };
+
+                if (window.fbInitializeApp) {
+                    initFirebase();
+                } else {
+                    window.addEventListener('firebaseLoaded', initFirebase);
+                    return () => window.removeEventListener('firebaseLoaded', initFirebase);
+                }
+            }, []);
+
+            // 2. Tarik Data Akun secara Real-Time (Jika Database Siap)
+            useEffect(() => {
+                if (!dbReady || !window.db) return;
+                
+                try {
+                    const usersRef = window.fbCollection(window.db, 'users');
+                    
+                    // onSnapshot akan terus memantau Firestore, jika ada user baru daftar akan langsung terupdate di sini
+                    const unsubscribe = window.fbOnSnapshot(usersRef, (snapshot) => {
+                        const loadedUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        setUsers(loadedUsers);
+                    }, (error) => {
+                        console.error("Firestore Error (Cek Tab 'Rules' di Firebase Console, pastikan 'allow read, write: if true;'):", error);
+                    });
+                    
+                    return () => unsubscribe();
+                } catch(e) {
+                    console.log("Menunggu API Firebase...", e);
+                }
+            }, [dbReady]);
+
+            // 3. Fungsi Mendaftar (Menyimpan Akun ke Cloud Firestore)
+            const handleSignUp = async (fullName, email, password) => {
+                // Cek apakah email sudah ada di state yang ditarik dari Firestore
+                const userExists = users.find(u => u.email === email);
+                if (userExists) return false; 
+                
+                const newUser = { fullName, email, password, createdAt: new Date().toISOString() };
+                
+                if (dbReady && window.db) {
+                    try {
+                        const usersRef = window.fbCollection(window.db, 'users');
+                        await window.fbAddDoc(usersRef, newUser);
+                        setCurrentUser(newUser); 
+                        return true;
+                    } catch(e) {
+                        console.error("Gagal menyimpan akun ke Firestore. Pastikan Aturan Firestore benar.", e);
+                        alert("Gagal koneksi ke database. Lihat console log.");
+                        return false;
+                    }
+                } else {
+                    alert("Database belum siap!");
+                    return false;
+                }
+            };
+
+            // 4. Fungsi Login (Mengecek kredensial ke Database)
+            const handleLogin = async (email, password) => {
+                if (!dbReady || !window.db) {
+                    alert("Database belum siap!");
+                    return false;
+                }
+
+                try {
+                    // Cek ke Firestore langsung
+                    const usersRef = window.fbCollection(window.db, 'users');
+                    const q = window.fbQuery(usersRef, window.fbWhere("email", "==", email), window.fbWhere("password", "==", password));
+                    
+                    const querySnapshot = await window.fbGetDocs(q);
+                    if (!querySnapshot.empty) {
+                        const foundUser = querySnapshot.docs[0].data();
+                        setCurrentUser(foundUser);
+                        return true;
+                    }
+                    return false; // Email atau Password Salah
+                } catch (e) {
+                    console.error("Gagal Login Firebase:", e);
+                    return false;
+                }
+            };
+
+            // 5. Fungsi Logout
+            const handleLogout = () => {
+                setCurrentUser(null);
+                setCurrentPage('login');
+            };
+
+            const renderPage = () => {
+                switch(currentPage) {
+                    case 'login': 
+                        return <LoginPage navigate={setCurrentPage} onLogin={handleLogin} />;
+                    case 'signup': 
+                        return <SignUpPage navigate={setCurrentPage} onSignUp={handleSignUp} />;
+                    case 'home': 
+                        return <HomePage navigate={setCurrentPage} currentUser={currentUser} />;
+                    case 'about': 
+                        return <AboutPage navigate={setCurrentPage} currentUser={currentUser} />;
+                    case 'dashboard': 
+                        return <DashboardPage navigate={setCurrentPage} currentUser={currentUser} onLogout={handleLogout} usersList={users} />;
+                    default: 
+                        return <LoginPage navigate={setCurrentPage} onLogin={handleLogin} />;
+                }
+            };
+
+            return (
+                <div className="w-full min-h-screen">
+                    {renderPage()}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
