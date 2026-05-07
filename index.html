@@ -254,7 +254,8 @@
                     {/* --- BACKGROUND BLOBS FOR MOBILE --- */}
                     <div className="lg:hidden absolute top-[-10%] left-[-10%] w-[300px] h-[300px] bg-secondary-fixed/20 rounded-full blur-[80px]"></div>
                     <div className="lg:hidden absolute bottom-[-10%] right-[-10%] w-[300px] h-[300px] bg-tertiary-fixed/20 rounded-full blur-[80px]"></div>
-                    
+                    <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=1200')] opacity-10 bg-cover bg-center mix-blend-overlay"></div>
+                  
                     {/* --- DESKTOP BRANDING PANEL (THE SLIDING DOOR) --- */}
                     <div className={`hidden lg:block absolute top-0 w-1/2 h-full z-20 transition-transform duration-[1000ms] ease-in-out ${isLogin ? 'translate-x-0' : 'translate-x-full'}`}>
                         <div className="relative w-full h-full overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] bg-surface/50 backdrop-blur-md border-x border-white/5">
@@ -304,112 +305,140 @@
                     </div>
 
                     {/* --- FORM PANEL (SLIDING OPPOSITE TO BRANDING) --- */}
-                    <div className={`absolute top-0 w-full lg:w-1/2 h-full flex items-center justify-center p-6 sm:p-12 z-10 transition-transform duration-[1000ms] ease-in-out ${isLogin ? 'translate-x-0 lg:translate-x-full' : 'translate-x-0'}`}>
-                        <div className="w-full max-w-md relative min-h-[650px] sm:min-h-[700px] flex items-center justify-center">
+                    <div className={`absolute top-0 w-full lg:w-1/2 h-full flex items-center justify-center p-4 sm:p-12 z-10 transition-transform duration-[1000ms] ease-in-out ${isLogin ? 'translate-x-0 lg:translate-x-full' : 'translate-x-0'} overflow-y-auto`}>
+                        <div className="w-full max-w-md relative min-h-[750px] lg:min-h-[700px] flex items-center justify-center py-10 lg:py-0">
                             
                             {/* LOGIN FORM CONTAINER */}
-                            <div className={`w-full absolute transition-all duration-700 ease-out ${isLogin ? 'opacity-100 z-20 delay-300 translate-y-0 lg:translate-x-0' : 'opacity-0 z-0 pointer-events-none translate-y-10 lg:translate-y-0 lg:-translate-x-20'}`}>
-                                <div className="glass-card rounded-3xl p-8 sm:p-10 w-full">
-                                    {/* Mobile Logo */}
-                                    <div className="flex lg:hidden items-center justify-center gap-3 mb-10">
-                                        <span className="material-symbols-outlined text-secondary text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>vital_signs</span>
-                                        <span className="font-h2 text-3xl font-bold text-white tracking-tight">Aethra</span>
-                                    </div>
-                                    
-                                    <div className="mb-10 text-center lg:text-left">
-                                        <h1 className="font-h2 text-[32px] sm:text-h1 text-white mb-2 tracking-tight">Welcome Back</h1>
-                                        <p className="font-body-md text-sm sm:text-body-lg text-secondary-fixed/80">Secure System Access</p>
+                            <div className={`w-full absolute transition-all duration-700 ease-out flex flex-col justify-center ${isLogin ? 'opacity-100 z-20 delay-300 translate-y-0 lg:translate-x-0' : 'opacity-0 z-0 pointer-events-none translate-y-10 lg:translate-y-0 lg:-translate-x-20'}`}>
+                                
+                                {/* Mobile Logo */}
+                                <div className="flex lg:hidden items-center justify-center gap-2 mb-6">
+                                    <span className="material-symbols-outlined text-white text-3xl drop-shadow-[0_0_15px_rgba(0,241,253,0.5)]" style={{ fontVariationSettings: "'FILL' 1" }}>vital_signs</span>
+                                    <span className="font-h2 text-2xl font-bold text-white tracking-tight">Aethra</span>
+                                </div>
+
+                                <div className="glass-card lg:bg-transparent lg:border-none lg:shadow-none lg:backdrop-blur-none lg:glass-panel-none rounded-3xl p-6 sm:p-10 w-full mb-6">
+                                    <div className="mb-8 text-center lg:text-left">
+                                        <h1 className="font-h2 text-2xl sm:text-h1 text-white mb-1 tracking-tight">Welcome Back</h1>
+                                        <p className="font-body-md text-xs sm:text-body-lg text-secondary-fixed/80">Secure System Access</p>
                                     </div>
                                     
                                     {loginError && (
-                                        <div className="mb-8 p-4 bg-error-container/40 border border-error/50 rounded-xl text-center animate-pulse">
-                                            <p className="text-error text-sm font-medium">{loginError}</p>
+                                        <div className="mb-6 p-3 bg-error-container/40 border border-error/50 rounded-xl text-center animate-pulse">
+                                            <p className="text-error text-[11px] sm:text-sm font-medium">{loginError}</p>
                                         </div>
                                     )}
 
-                                    <form className="space-y-6" onSubmit={handleLoginSubmit}>
-                                        <div className="space-y-2">
-                                            <label className="block font-label-caps text-[10px] text-on-surface-variant uppercase tracking-widest pl-1">username</label>
+                                    <form className="space-y-5" onSubmit={handleLoginSubmit}>
+                                        <div className="space-y-1.5">
+                                            <label className="block font-label-caps text-[9px] sm:text-[10px] text-on-surface-variant uppercase tracking-widest pl-1">username</label>
                                             <div className="relative group">
-                                                <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant group-focus-within:text-secondary transition-colors">person</span>
-                                                <input className="glass-input w-full rounded-2xl pl-12 pr-4 py-4 text-white placeholder-on-surface-variant/40 font-body-md transition-all" placeholder="Masukkan email..." type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
+                                                <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant text-[18px] sm:text-[24px] group-focus-within:text-secondary transition-colors">person</span>
+                                                <input className="glass-input w-full rounded-2xl pl-10 sm:pl-12 pr-4 py-3 sm:py-4 text-sm sm:text-base text-white placeholder-on-surface-variant/40 font-body-md transition-all" placeholder="Masukkan email..." type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
                                             </div>
                                         </div>
-                                        <div className="space-y-2">
+                                        <div className="space-y-1.5">
                                             <div className="flex justify-between items-center px-1">
-                                                <label className="block font-label-caps text-[10px] text-on-surface-variant uppercase tracking-widest">Password</label>
-                                                <a className="font-label-caps text-[10px] text-secondary-fixed hover:text-white transition-colors cursor-pointer uppercase tracking-widest">Recover?</a>
+                                                <label className="block font-label-caps text-[9px] sm:text-[10px] text-on-surface-variant uppercase tracking-widest">Password</label>
+                                                <a className="font-label-caps text-[9px] sm:text-[10px] text-secondary-fixed hover:text-white transition-colors cursor-pointer uppercase tracking-widest">Recover?</a>
                                             </div>
                                             <div className="relative group">
-                                                <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant group-focus-within:text-secondary transition-colors">lock</span>
-                                                <input className="glass-input w-full rounded-2xl pl-12 pr-4 py-4 text-white placeholder-on-surface-variant/40 font-body-md transition-all" placeholder="••••••••" type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} />
+                                                <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant text-[18px] sm:text-[24px] group-focus-within:text-secondary transition-colors">lock</span>
+                                                <input className="glass-input w-full rounded-2xl pl-10 sm:pl-12 pr-4 py-3 sm:py-4 text-sm sm:text-base text-white placeholder-on-surface-variant/40 font-body-md transition-all" placeholder="••••••••" type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} />
                                             </div>
                                         </div>
-                                        <button disabled={isLoginLoading} className="btn-primary w-full rounded-2xl py-4 font-h3 text-[18px] text-surface-container-lowest font-bold mt-10 flex justify-center items-center gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(0,241,253,0.3)]" type="submit">
+                                        <button disabled={isLoginLoading} className="btn-primary w-full rounded-2xl py-3.5 sm:py-4 font-h3 text-base sm:text-[18px] text-surface-container-lowest font-bold mt-8 flex justify-center items-center gap-2 sm:gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(0,241,253,0.3)]" type="submit">
                                             {isLoginLoading ? 'Verifikasi...' : 'Login To Sistem'}
-                                            <span className="material-symbols-outlined fill-icon">arrow_forward</span>
+                                            <span className="material-symbols-outlined fill-icon text-[18px] sm:text-[24px]">arrow_forward</span>
                                         </button>
                                     </form>
-                                    <div className="mt-10 text-center lg:text-left pt-6 border-t border-white/10">
-                                        <p className="font-body-md text-sm text-on-surface-variant">
-                                            Belum memiliki akun? <a onClick={toggleMode} className="text-secondary hover:text-white font-bold transition-colors ml-2 cursor-pointer underline underline-offset-4 decoration-secondary/30">Daftar sekarang</a>
+                                    <div className="mt-6 text-center lg:text-left pt-5 border-t border-white/10">
+                                        <p className="font-body-md text-[11px] sm:text-sm text-on-surface-variant">
+                                            Belum memiliki akun? <a onClick={toggleMode} className="text-secondary hover:text-white font-bold transition-colors ml-1 cursor-pointer underline underline-offset-2 decoration-secondary/30">Daftar sekarang</a>
                                         </p>
                                     </div>
+                                </div>
+
+                                {/* Mobile Branding Panel */}
+                                <div className="lg:hidden glass-card rounded-3xl p-5 border-l-4 border-l-secondary mb-8">
+                                    <h2 className="font-h2 text-base text-white mb-2 leading-tight">Precision Intelligence for Biomedical Diagnostics.</h2>
+                                    <p className="font-body-md text-[11px] text-on-surface-variant leading-relaxed opacity-90">
+                                        Aethra represents the convergence of proprietary biometric hardware and advanced cloud analytics. Log in to access the zero-latency monitoring ecosystems.
+                                    </p>
+                                </div>
+
+                                {/* Mobile Footer */}
+                                <div className="lg:hidden text-on-surface-variant/50 text-center text-[9px] font-label-caps tracking-widest uppercase">
+                                    © 2026 Powered by rahul ghulam.
                                 </div>
                             </div>
 
                             {/* SIGN UP FORM CONTAINER */}
-                            <div className={`w-full absolute transition-all duration-700 ease-out ${!isLogin ? 'opacity-100 z-20 delay-300 translate-y-0 lg:translate-x-0' : 'opacity-0 z-0 pointer-events-none -translate-y-10 lg:-translate-y-0 lg:translate-x-20'}`}>
-                                <div className="glass-card rounded-3xl p-8 sm:p-10 w-full">
-                                    {/* Mobile Logo */}
-                                    <div className="flex lg:hidden items-center justify-center gap-3 mb-10">
-                                        <span className="material-symbols-outlined text-tertiary-fixed text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>biotech</span>
-                                        <span className="font-h2 text-3xl font-bold text-white tracking-tight">Aethra</span>
-                                    </div>
-                                    
-                                    <div className="mb-10 text-center lg:text-left">
-                                        <h1 className="font-h2 text-[32px] sm:text-h1 text-white mb-2 tracking-tight">Create Account</h1>
-                                        <p className="font-body-md text-sm sm:text-body-lg text-tertiary-fixed/80">Clinical Data Registration</p>
+                            <div className={`w-full absolute transition-all duration-700 ease-out flex flex-col justify-center ${!isLogin ? 'opacity-100 z-20 delay-300 translate-y-0 lg:translate-x-0' : 'opacity-0 z-0 pointer-events-none -translate-y-10 lg:-translate-y-0 lg:translate-x-20'}`}>
+                                
+                                {/* Mobile Logo */}
+                                <div className="flex lg:hidden items-center justify-center gap-2 mb-6">
+                                    <span className="font-h2 text-2xl font-bold text-white tracking-tight">Aethra</span>
+                                    <span className="material-symbols-outlined text-tertiary-fixed text-3xl drop-shadow-[0_0_15px_rgba(155,203,255,0.5)]" style={{ fontVariationSettings: "'FILL' 1" }}>biotech</span>
+                                </div>
+
+                                <div className="glass-card lg:bg-transparent lg:border-none lg:shadow-none lg:backdrop-blur-none lg:glass-panel-none rounded-3xl p-6 sm:p-10 w-full mb-6">
+                                    <div className="mb-8 text-center lg:text-left">
+                                        <h1 className="font-h2 text-[28px] sm:text-h1 text-white mb-1 tracking-tight">Create Account</h1>
+                                        <p className="font-body-md text-xs sm:text-body-lg text-tertiary-fixed/80">Clinical Data Registration</p>
                                     </div>
                                     
                                     {signUpError && (
-                                        <div className="mb-8 p-4 bg-error-container/40 border border-error/50 rounded-xl text-center">
-                                            <p className="text-error text-sm font-medium">{signUpError}</p>
+                                        <div className="mb-6 p-3 bg-error-container/40 border border-error/50 rounded-xl text-center">
+                                            <p className="text-error text-[11px] sm:text-sm font-medium">{signUpError}</p>
                                         </div>
                                     )}
                                     
-                                    <form className="flex flex-col gap-6" onSubmit={handleSignUpSubmit}>
-                                        <div className="flex flex-col gap-2">
-                                            <label className="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-widest pl-1">Nama Lengkap</label>
+                                    <form className="flex flex-col gap-5" onSubmit={handleSignUpSubmit}>
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="font-label-caps text-[9px] sm:text-[10px] text-on-surface-variant uppercase tracking-widest pl-1">Nama Lengkap</label>
                                             <div className="relative group">
-                                                <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant group-focus-within:text-tertiary-fixed transition-colors">person_add</span>
-                                                <input className="glass-input w-full rounded-2xl pl-12 pr-4 py-4 text-white placeholder-on-surface-variant/40 font-body-md transition-all" placeholder="Masukkan nama Anda" type="text" value={signUpFullName} onChange={(e) => setSignUpFullName(e.target.value)} />
+                                                <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant text-[18px] sm:text-[24px] group-focus-within:text-tertiary-fixed transition-colors">person_add</span>
+                                                <input className="glass-input w-full rounded-2xl pl-10 sm:pl-12 pr-4 py-3 sm:py-4 text-sm sm:text-base text-white placeholder-on-surface-variant/40 font-body-md transition-all" placeholder="Masukkan nama Anda" type="text" value={signUpFullName} onChange={(e) => setSignUpFullName(e.target.value)} />
                                             </div>
                                         </div>
-                                        <div className="flex flex-col gap-2">
-                                            <label className="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-widest pl-1">Email Operatif</label>
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="font-label-caps text-[9px] sm:text-[10px] text-on-surface-variant uppercase tracking-widest pl-1">Email Operatif</label>
                                             <div className="relative group">
-                                                <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant group-focus-within:text-tertiary-fixed transition-colors">badge</span>
-                                                <input className="glass-input w-full rounded-2xl pl-12 pr-4 py-4 text-white placeholder-on-surface-variant/40 font-body-md transition-all" placeholder="Masukkan email" type="email" value={signUpEmail} onChange={(e) => setSignUpEmail(e.target.value)} />
+                                                <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant text-[18px] sm:text-[24px] group-focus-within:text-tertiary-fixed transition-colors">badge</span>
+                                                <input className="glass-input w-full rounded-2xl pl-10 sm:pl-12 pr-4 py-3 sm:py-4 text-sm sm:text-base text-white placeholder-on-surface-variant/40 font-body-md transition-all" placeholder="Masukkan email" type="email" value={signUpEmail} onChange={(e) => setSignUpEmail(e.target.value)} />
                                             </div>
                                         </div>
-                                        <div className="flex flex-col gap-2">
-                                            <label className="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-widest pl-1">Kata Sandi</label>
+                                        <div className="flex flex-col gap-1.5">
+                                            <label className="font-label-caps text-[9px] sm:text-[10px] text-on-surface-variant uppercase tracking-widest pl-1">Kata Sandi</label>
                                             <div className="relative group">
-                                                <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant group-focus-within:text-tertiary-fixed transition-colors">lock</span>
-                                                <input className="glass-input w-full rounded-2xl pl-12 pr-4 py-4 text-white placeholder-on-surface-variant/40 font-body-md transition-all" placeholder="••••••••" type="password" value={signUpPassword} onChange={(e) => setSignUpPassword(e.target.value)} />
+                                                <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant text-[18px] sm:text-[24px] group-focus-within:text-tertiary-fixed transition-colors">lock</span>
+                                                <input className="glass-input w-full rounded-2xl pl-10 sm:pl-12 pr-4 py-3 sm:py-4 text-sm sm:text-base text-white placeholder-on-surface-variant/40 font-body-md transition-all" placeholder="••••••••" type="password" value={signUpPassword} onChange={(e) => setSignUpPassword(e.target.value)} />
                                             </div>
                                         </div>
-                                        <button disabled={isSignUpLoading} className="w-full mt-6 bg-gradient-to-r from-tertiary-fixed to-secondary-container text-on-secondary-container font-h3 text-[18px] py-4 rounded-2xl neon-glow transition-all hover:scale-[1.02] active:scale-[0.98] flex justify-center items-center gap-3 shadow-[0_0_20px_rgba(155,203,255,0.4)]" type="submit">
+                                        <button disabled={isSignUpLoading} className="w-full mt-4 bg-gradient-to-r from-tertiary-fixed to-secondary-container text-on-secondary-container font-h3 text-base sm:text-[18px] py-3.5 sm:py-4 rounded-2xl neon-glow transition-all hover:scale-[1.02] active:scale-[0.98] flex justify-center items-center gap-2 sm:gap-3 shadow-[0_0_20px_rgba(155,203,255,0.4)]" type="submit">
                                             {isSignUpLoading ? 'Menyimpan...' : 'Registrasi Sistem'}
-                                            <span className="material-symbols-outlined">person_add</span>
+                                            <span className="material-symbols-outlined text-[18px] sm:text-[24px]">person_add</span>
                                         </button>
                                     </form>
-                                    <div className="mt-8 text-center lg:text-left pt-6 border-t border-white/10">
-                                        <p className="font-body-md text-sm text-on-surface-variant">
-                                            Sudah memiliki akses? <a onClick={toggleMode} className="text-tertiary-fixed hover:text-white font-bold transition-colors ml-2 cursor-pointer underline underline-offset-4 decoration-tertiary-fixed/30">Masuk ke terminal</a>
+                                    <div className="mt-6 text-center lg:text-left pt-5 border-t border-white/10">
+                                        <p className="font-body-md text-[11px] sm:text-sm text-on-surface-variant">
+                                            Sudah memiliki akses? <a onClick={toggleMode} className="text-tertiary-fixed hover:text-white font-bold transition-colors ml-1 cursor-pointer underline underline-offset-2 decoration-tertiary-fixed/30">Masuk ke terminal</a>
                                         </p>
                                     </div>
+                                </div>
+
+                                {/* Mobile Branding Panel */}
+                                <div className="lg:hidden glass-card rounded-3xl p-5 border-r-4 border-r-tertiary-fixed mb-8 text-right">
+                                    <h2 className="font-h2 text-base text-white mb-2 leading-tight">Join the Network.</h2>
+                                    <p className="font-body-md text-[11px] text-on-surface-variant leading-relaxed opacity-90">
+                                        Register your operative ID to gain access to our secure, real-time biomedical diagnostics and sensor-to-cloud analytics suite.
+                                    </p>
+                                </div>
+
+                                {/* Mobile Footer */}
+                                <div className="lg:hidden text-on-surface-variant/50 text-center text-[9px] font-label-caps tracking-widest uppercase">
+                                    System Clearance Required.
                                 </div>
                             </div>
                         </div>
