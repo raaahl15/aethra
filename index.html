@@ -201,6 +201,27 @@
             transform: translateY(-4px);
             box-shadow: 0 12px 40px 0 rgba(0, 220, 230, 0.15);
         }
+
+        /* Custom Scrollbar untuk Sidebar */
+        .custom-scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(111, 246, 255, 0.3) rgba(3, 15, 25, 0.3);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(3, 15, 25, 0.3);
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(111, 246, 255, 0.3);
+            border-radius: 3px;
+            border: none;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(111, 246, 255, 0.5);
+        }
     </style>
 </head>
 <body>
@@ -788,26 +809,185 @@
         };
 
         // --- COMPONENT: TOP HEADER ---
-        const TopHeader = ({ navigate, currentUser }) => (
-            <header className="fixed z-50 bg-surface/40 backdrop-blur-xl border-b border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] flex justify-between items-center w-full px-4 sm:px-8 md:px-margin-x h-20 top-0 left-0">
-                <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('home')}>
-                    <span className="material-symbols-outlined text-secondary text-2xl sm:text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>vital_signs</span>
-                    <span className="font-h2 text-[24px] sm:text-h2 font-bold text-secondary tracking-tight">Aethra</span>
-                </div>
-                <div className="flex items-center gap-4 sm:gap-gutter">
-                    <button className="text-primary hover:bg-white/10 transition-colors p-2 rounded-full flex items-center justify-center relative">
-                        <span className="material-symbols-outlined">notifications</span>
-                    </button>
-                    <div className="hidden md:block text-right mr-2">
-                        <p className="font-body-md text-body-md text-on-surface font-medium truncate max-w-[150px]">{currentUser ? currentUser.fullName : 'Guest'}</p>
-                        <p className="font-label-caps text-label-caps text-on-surface-variant truncate max-w-[150px]">{currentUser ? currentUser.email : 'No Access'}</p>
+        // --- COMPONENT: TOP HEADER (DENGAN SISTEM NOTIFIKASI) ---
+        // --- COMPONENT: TOP HEADER (DENGAN NOTIFIKASI & MENU PROFIL) ---
+        const TopHeader = ({ navigate, currentUser, onLogout }) => {
+            // State untuk mengontrol buka/tutup menu
+            const [isNotifOpen, setIsNotifOpen] = useState(false);
+            const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+            // State data notifikasi simulasi
+            const [notifications, setNotifications] = useState([
+                { id: 1, title: 'Peringatan Kritis', message: 'Detak jantung terdeteksi tidak wajar (>110 BPM) pada Pasien.', time: 'Baru saja', type: 'error', read: false },
+                { id: 2, title: 'Status Sensor', message: 'Modul MAX30102 berhasil disinkronisasi ke Cloud.', time: '10 mnt lalu', type: 'success', read: false },
+                { id: 3, title: 'Pembaruan Sistem', message: 'Patch keamanan v1.2 telah diterapkan oleh Admin.', time: '2 jam lalu', type: 'info', read: true }
+            ]);
+
+            const unreadCount = notifications.filter(n => !n.read).length;
+
+            // Fungsi Toggle Menu (pastikan hanya satu menu yang terbuka di waktu bersamaan)
+            const toggleNotif = () => {
+                setIsNotifOpen(!isNotifOpen);
+                if (isProfileOpen) setIsProfileOpen(false);
+            };
+
+            const toggleProfile = () => {
+                setIsProfileOpen(!isProfileOpen);
+                if (isNotifOpen) setIsNotifOpen(false);
+            };
+
+            // Menutup semua menu
+            const closeAllMenus = () => {
+                setIsNotifOpen(false);
+                setIsProfileOpen(false);
+            };
+
+            const markAllAsRead = () => {
+                setNotifications(notifications.map(n => ({ ...n, read: true })));
+            };
+
+            const markAsRead = (id) => {
+                setNotifications(notifications.map(n => n.id === id ? { ...n, read: true } : n));
+            };
+
+            // Fungsi Logout (menggunakan properti onLogout jika ada, atau fallback reset sesi)
+            const handleLogoutClick = () => {
+                closeAllMenus();
+                if (onLogout) {
+                    onLogout();
+                } else {
+                    navigate('auth');
+                    window.location.reload(); // Fallback untuk memastikan state tereset
+                }
+            };
+
+            return (
+                <header className="fixed z-50 bg-surface/40 backdrop-blur-xl border-b border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] flex justify-between items-center w-full px-4 sm:px-8 md:px-margin-x h-20 top-0 left-0">
+
+                    {/* OVERLAY: Menutup dropdown jika area luar diklik */}
+                    {(isNotifOpen || isProfileOpen) && (
+                        <div className="fixed inset-0 z-40 cursor-default" onClick={closeAllMenus}></div>
+                    )}
+
+                    {/* Logo Section */}
+                    <div className="flex items-center gap-3 cursor-pointer z-50" onClick={() => navigate('home')}>
+                        <span className="material-symbols-outlined text-secondary text-2xl sm:text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>vital_signs</span>
+                        <span className="font-h2 text-[24px] sm:text-h2 font-bold text-secondary tracking-tight">Aethra</span>
                     </div>
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-surface-variant border border-white/20 overflow-hidden cursor-pointer shrink-0" onClick={() => navigate('dashboard')}>
-                        <img alt="Profile" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBD9vhiyCYvCEI5lVEbe1Crxq9NHOliFMPLkB0CPkHJCKxteAR-JE_GrKmRnUH9m7WTXV0AssXawhdooWFgscwp3Y5I4JgRdgBoWMbeNNgP_p-XwJAdN453UJNfZwpG_f7N-bic_9DW48wq5aBX7ihlwNJtj2MCJ2fXT967ZM2M9fd5l5qHkOPIBWLJO0OAOMtaYaBDdBvFgnhnMKWsvFsqFWZhH6u-g6wXQJLRNHqkJ_qvwKjmqkw-b-KsZ0H7eUSOkGI56ij8o6s" />
+
+                    {/* Kanan: Notifikasi & Profil */}
+                    <div className="flex items-center gap-4 sm:gap-6 z-50">
+
+                        {/* --- MENU 1: LONCENG NOTIFIKASI --- */}
+                        <div className="relative">
+                            <button
+                                onClick={toggleNotif}
+                                className={`text-primary hover:bg-white/10 transition-colors p-2 rounded-full flex items-center justify-center relative ${isNotifOpen ? 'bg-white/10' : ''}`}
+                            >
+                                <span className="material-symbols-outlined">notifications</span>
+                                {unreadCount > 0 && (
+                                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-error neon-glow animate-pulse"></span>
+                                )}
+                            </button>
+
+                            {/* Dropdown Notifikasi */}
+                            <div className={`absolute right-0 mt-4 w-80 sm:w-96 glass-card rounded-2xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-300 origin-top-right ${isNotifOpen ? 'opacity-100 scale-100 translate-y-0 visible' : 'opacity-0 scale-95 -translate-y-2 invisible pointer-events-none'}`}>
+                                <div className="p-4 border-b border-white/10 flex justify-between items-center bg-surface-container-lowest/50 backdrop-blur-md">
+                                    <h3 className="font-h3 text-white text-base">Peringatan Sistem</h3>
+                                    {unreadCount > 0 && (
+                                        <button onClick={markAllAsRead} className="text-[9px] font-label-caps text-secondary-fixed hover:text-white uppercase tracking-widest transition-colors">
+                                            Tandai dibaca
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="max-h-[60vh] overflow-y-auto divide-y divide-white/5 bg-surface-container/30 backdrop-blur-md">
+                                    {notifications.length > 0 ? (
+                                        notifications.map(notif => (
+                                            <div key={notif.id} onClick={() => markAsRead(notif.id)} className={`p-4 flex gap-4 transition-colors cursor-pointer hover:bg-white/10 ${!notif.read ? 'bg-secondary-fixed/5' : 'opacity-70'}`}>
+                                                <div className="mt-1 shrink-0">
+                                                    {notif.type === 'error' && <span className="material-symbols-outlined text-error text-[20px]">warning</span>}
+                                                    {notif.type === 'success' && <span className="material-symbols-outlined text-secondary-fixed text-[20px]">check_circle</span>}
+                                                    {notif.type === 'info' && <span className="material-symbols-outlined text-tertiary-fixed text-[20px]">info</span>}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="flex justify-between items-start mb-1 gap-2">
+                                                        <h4 className={`font-body-md text-[13px] ${!notif.read ? 'text-white font-bold' : 'text-on-surface'}`}>{notif.title}</h4>
+                                                        <span className="font-body-md text-[9px] text-on-surface-variant whitespace-nowrap mt-0.5">{notif.time}</span>
+                                                    </div>
+                                                    <p className="font-body-md text-[11px] text-on-surface-variant leading-relaxed">{notif.message}</p>
+                                                </div>
+                                                {!notif.read && <div className="w-1.5 h-1.5 rounded-full bg-secondary-fixed mt-2 shrink-0 neon-glow"></div>}
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="p-8 text-center text-on-surface-variant font-body-md text-sm">Status optimal. Tidak ada peringatan.</div>
+                                    )}
+                                </div>
+                                <div className="p-3 border-t border-white/10 text-center bg-surface-container-lowest/50 hover:bg-white/5 transition-colors cursor-pointer">
+                                    <a className="font-label-caps text-[9px] text-on-surface-variant hover:text-white uppercase tracking-widest transition-colors block w-full">Lihat Semua Log Telemetri</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* --- MENU 2: KONTROL AKUN PROFIL --- */}
+                        <div className="flex items-center gap-3">
+                            <div className="hidden md:block text-right">
+                                <p className="font-body-md text-sm text-on-surface font-medium truncate max-w-[150px]">{currentUser ? currentUser.fullName : 'Guest'}</p>
+                                <p className="font-label-caps text-[10px] text-on-surface-variant truncate max-w-[150px]">{currentUser && currentUser.email === 'admin@aethra.com' ? 'Superadmin' : (currentUser ? currentUser.email : 'No Access')}</p>
+                            </div>
+
+                            <div className="relative">
+                                {/* Tombol Avatar */}
+                                <div
+                                    onClick={toggleProfile}
+                                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-surface-variant border overflow-hidden cursor-pointer shrink-0 transition-colors ${isProfileOpen ? 'border-secondary-fixed shadow-[0_0_15px_rgba(111,246,255,0.3)]' : 'border-white/20 hover:border-white/50'}`}
+                                >
+                                    <img alt="Profile" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBD9vhiyCYvCEI5lVEbe1Crxq9NHOliFMPLkB0CPkHJCKxteAR-JE_GrKmRnUH9m7WTXV0AssXawhdooWFgscwp3Y5I4JgRdgBoWMbeNNgP_p-XwJAdN453UJNfZwpG_f7N-bic_9DW48wq5aBX7ihlwNJtj2MCJ2fXT967ZM2M9fd5l5qHkOPIBWLJO0OAOMtaYaBDdBvFgnhnMKWsvFsqFWZhH6u-g6wXQJLRNHqkJ_qvwKjmqkw-b-KsZ0H7eUSOkGI56ij8o6s" />
+                                </div>
+
+                                {/* Dropdown Kontrol Akun */}
+                                <div className={`absolute right-0 mt-4 w-64 glass-card rounded-2xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden transition-all duration-300 origin-top-right ${isProfileOpen ? 'opacity-100 scale-100 translate-y-0 visible' : 'opacity-0 scale-95 -translate-y-2 invisible pointer-events-none'}`}>
+
+                                    {/* Header Profil */}
+                                    <div className="p-4 border-b border-white/10 bg-surface-container-lowest/50 backdrop-blur-md flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full border border-white/20 overflow-hidden shrink-0">
+                                            <img alt="Profile" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBD9vhiyCYvCEI5lVEbe1Crxq9NHOliFMPLkB0CPkHJCKxteAR-JE_GrKmRnUH9m7WTXV0AssXawhdooWFgscwp3Y5I4JgRdgBoWMbeNNgP_p-XwJAdN453UJNfZwpG_f7N-bic_9DW48wq5aBX7ihlwNJtj2MCJ2fXT967ZM2M9fd5l5qHkOPIBWLJO0OAOMtaYaBDdBvFgnhnMKWsvFsqFWZhH6u-g6wXQJLRNHqkJ_qvwKjmqkw-b-KsZ0H7eUSOkGI56ij8o6s" />
+                                        </div>
+                                        <div className="overflow-hidden">
+                                            <p className="font-body-md text-sm text-white font-bold truncate">{currentUser ? currentUser.fullName : 'Guest'}</p>
+                                            <p className="font-label-caps text-[9px] text-tertiary-fixed uppercase tracking-widest mt-0.5 truncate">
+                                                {currentUser && currentUser.email === 'admin@aethra.com' ? 'Superadmin System' : 'Operative ID Valid'}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Menu Pengaturan */}
+                                    <div className="p-2 flex flex-col gap-1 bg-surface-container/30 backdrop-blur-md">
+                                        <button className="flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors group">
+                                            <span className="material-symbols-outlined text-on-surface-variant group-hover:text-white text-[20px]">manage_accounts</span>
+                                            <span className="font-body-md text-xs text-on-surface-variant group-hover:text-white">Pengaturan Akun</span>
+                                        </button>
+                                        <button className="flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-xl hover:bg-white/10 transition-colors group">
+                                            <span className="material-symbols-outlined text-on-surface-variant group-hover:text-white text-[20px]">tune</span>
+                                            <span className="font-body-md text-xs text-on-surface-variant group-hover:text-white">Preferensi Sistem</span>
+                                        </button>
+                                    </div>
+
+                                    {/* Footer Logout */}
+                                    <div className="p-2 border-t border-white/10 bg-surface-container-lowest/50">
+                                        <button onClick={handleLogoutClick} className="flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-xl hover:bg-error/20 hover:border hover:border-error/30 transition-colors group">
+                                            <span className="material-symbols-outlined text-error text-[20px] group-hover:drop-shadow-[0_0_8px_rgba(255,180,171,0.8)]">logout</span>
+                                            <span className="font-body-md text-xs text-error font-bold">Terminate Session</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
-                </div>
-            </header>
-        );
+                </header>
+            );
+        };
 
         // --- PAGE: HOME (INTERACTIVE DASHBOARD) ---
         const HomePage = ({ navigate, currentUser }) => {
@@ -914,9 +1094,26 @@
                                 <p className="font-body-md text-sm text-on-surface-variant mb-6 leading-relaxed relative z-10 flex-grow">
                                     Aethra merepresentasikan integrasi klinis digital tingkat lanjut. Menggunakan arsitektur sensor-ke-awan eksklusif yang dirancang untuk akurasi mutlak dengan palet visual biru pastel untuk kenyamanan pengguna.
                                 </p>
-                                <button onClick={() => navigate('about')} className="flex items-center justify-between w-full text-xs font-label-caps text-secondary-fixed hover:text-white uppercase tracking-widest border-t border-white/10 pt-4 transition-colors">
-                                    View Documentation <span className="material-symbols-outlined text-[16px]">open_in_new</span>
-                                </button>
+                                
+                                {/* --- TOMBOL VIEW DOCUMENTATION YANG BARU --- */}
+                                <div className="mt-auto pt-4 border-t border-white/10">
+                                    <button 
+                                        onClick={() => navigate('about')} 
+                                        className="group relative flex items-center justify-between w-full overflow-hidden rounded-xl p-3 sm:p-4 -mx-3 sm:-mx-4 hover:bg-white/5 transition-all duration-300 active:scale-[0.98]"
+                                    >
+                                        <span className="relative z-10 text-[10px] sm:text-xs font-label-caps text-secondary-fixed group-hover:text-white uppercase tracking-widest transition-colors duration-300">
+                                            View Documentation
+                                        </span>
+                                        
+                                        <span className="relative z-10 flex items-center justify-center w-8 h-8 rounded-full bg-secondary-fixed/10 group-hover:bg-secondary-fixed text-secondary-fixed group-hover:text-surface-container-lowest transition-all duration-300">
+                                            <span className="material-symbols-outlined text-[16px] transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5">
+                                                open_in_new
+                                            </span>
+                                        </span>
+                                    </button>
+                                </div>
+                                {/* ------------------------------------------ */}
+                                
                             </div>
 
                             {/* System Logs Mini-Card */}
@@ -994,14 +1191,15 @@
         );
 
         // --- PAGE: DASHBOARD ---
+        // --- PAGE: DASHBOARD (FULL CLINICAL LAYOUT) ---
         const DashboardPage = ({ navigate, currentUser, onLogout, usersList }) => {
             const isAdmin = currentUser && currentUser.email === 'admin@aethra.com';
+            // Default tab: 'dashboard' untuk user biasa, 'admin_users' untuk admin
             const [activeTab, setActiveTab] = useState(isAdmin ? 'admin_users' : 'dashboard');
             
-            // State untuk Sidebar Mobile
             const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-            // Mock Data Generator for Vitals
+            // Mock Data Generator for Vitals (Khusus Admin View)
             const getMockHealthData = (email) => {
                 const id = email ? email.length : 0;
                 const isWarning = id % 3 === 0;
@@ -1026,7 +1224,7 @@
                         ></div>
                     )}
 
-                    {/* SIDEBAR NAVIGATION */}
+                    {/* SIDEBAR NAVIGATION (UPDATED CLINICAL MENUS) */}
                     <nav className={`bg-surface-container/60 backdrop-blur-2xl docked left-0 h-full w-72 border-r border-white/10 shadow-[4px_0_24px_rgba(0,0,0,0.5)] flex flex-col fixed top-0 py-8 z-50 transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
                         
                         <button 
@@ -1036,7 +1234,7 @@
                             <span className="material-symbols-outlined">close</span>
                         </button>
 
-                        <div className="px-8 mb-12 flex items-center gap-4 cursor-pointer" onClick={() => navigate('home')}>
+                        <div className="px-8 mb-8 flex items-center gap-4 cursor-pointer" onClick={() => navigate('home')}>
                             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-secondary-fixed to-on-tertiary-container flex items-center justify-center shrink-0">
                                 <span className="material-symbols-outlined text-surface-container-lowest" style={{ fontVariationSettings: "'FILL' 1" }}>vital_signs</span>
                             </div>
@@ -1048,33 +1246,56 @@
                             </div>
                         </div>
                         
-                        <div className="flex-1 px-4 flex flex-col gap-2 font-body-md text-body-md overflow-y-auto">
+                        <div className="flex-1 px-4 flex flex-col gap-1 font-body-md text-body-md overflow-y-auto custom-scrollbar">
                             {isAdmin ? (
                                 <React.Fragment>
-                                    <div className="px-4 py-2 mb-2">
-                                        <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">Manajemen Sistem</span>
+                                    <div className="px-4 py-2 mt-2 mb-1">
+                                        <span className="font-label-caps text-[10px] text-secondary-fixed uppercase tracking-widest">Manajemen Sistem</span>
                                     </div>
-                                    <a onClick={() => {setActiveTab('admin_users'); setIsSidebarOpen(false);}} className={`flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer transition-all ${activeTab === 'admin_users' ? 'text-secondary border-r-4 border-secondary bg-white/10' : 'text-on-surface-variant hover:text-secondary hover:bg-white/5'}`}>
-                                        <span className="material-symbols-outlined">group</span> Data Pengguna
+                                    <a onClick={() => {setActiveTab('admin_users'); setIsSidebarOpen(false);}} className={`flex items-center gap-4 px-4 py-3 rounded-xl cursor-pointer transition-all ${activeTab === 'admin_users' ? 'text-secondary-fixed bg-white/10 shadow-[inset_4px_0_0_0_#6ff6ff]' : 'text-on-surface-variant hover:text-secondary-fixed hover:bg-white/5'}`}>
+                                        <span className="material-symbols-outlined text-[20px]">group</span> Data Pengguna
                                     </a>
-                                    <a onClick={() => {setActiveTab('admin_reports'); setIsSidebarOpen(false);}} className={`flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer transition-all ${activeTab === 'admin_reports' ? 'text-secondary border-r-4 border-secondary bg-white/10' : 'text-on-surface-variant hover:text-secondary hover:bg-white/5'}`}>
-                                        <span className="material-symbols-outlined">medical_information</span> Laporan Kesehatan
+                                    <a onClick={() => {setActiveTab('admin_reports'); setIsSidebarOpen(false);}} className={`flex items-center gap-4 px-4 py-3 rounded-xl cursor-pointer transition-all ${activeTab === 'admin_reports' ? 'text-secondary-fixed bg-white/10 shadow-[inset_4px_0_0_0_#6ff6ff]' : 'text-on-surface-variant hover:text-secondary-fixed hover:bg-white/5'}`}>
+                                        <span className="material-symbols-outlined text-[20px]">medical_information</span> Laporan Kesehatan
                                     </a>
                                 </React.Fragment>
                             ) : (
                                 <React.Fragment>
-                                    <a onClick={() => {setActiveTab('dashboard'); setIsSidebarOpen(false);}} className={`flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer transition-all ${activeTab === 'dashboard' ? 'text-secondary border-r-4 border-secondary bg-white/10' : 'text-on-surface-variant hover:text-secondary hover:bg-white/5'}`}>
-                                        <span className="material-symbols-outlined">dashboard</span> Dashboard
+                                    {/* KATEGORI 1: MAIN CONSOLE */}
+                                    <div className="px-4 py-2 mt-2 mb-1">
+                                        <span className="font-label-caps text-[10px] text-tertiary-fixed uppercase tracking-widest">Main Console</span>
+                                    </div>
+                                    <a onClick={() => {setActiveTab('dashboard'); setIsSidebarOpen(false);}} className={`flex items-center gap-4 px-4 py-3 rounded-xl cursor-pointer transition-all ${activeTab === 'dashboard' ? 'text-secondary-fixed bg-white/10 shadow-[inset_4px_0_0_0_#6ff6ff]' : 'text-on-surface-variant hover:text-secondary-fixed hover:bg-white/5'}`}>
+                                        <span className="material-symbols-outlined text-[20px]">dashboard</span> Dashboard
                                     </a>
-                                    <a onClick={() => {setActiveTab('history'); setIsSidebarOpen(false);}} className={`flex items-center gap-4 px-4 py-3 rounded-lg cursor-pointer transition-all ${activeTab === 'history' ? 'text-secondary border-r-4 border-secondary bg-white/10' : 'text-on-surface-variant hover:text-secondary hover:bg-white/5'}`}>
-                                        <span className="material-symbols-outlined">history_edu</span> History & Logs
+                                    <a onClick={() => {setActiveTab('analytics'); setIsSidebarOpen(false);}} className={`flex items-center gap-4 px-4 py-3 rounded-xl cursor-pointer transition-all ${activeTab === 'analytics' ? 'text-secondary-fixed bg-white/10 shadow-[inset_4px_0_0_0_#6ff6ff]' : 'text-on-surface-variant hover:text-secondary-fixed hover:bg-white/5'}`}>
+                                        <span className="material-symbols-outlined text-[20px]">monitoring</span> Analytics & Trends
+                                    </a>
+
+                                    {/* KATEGORI 2: CLINICAL DATA */}
+                                    <div className="px-4 py-2 mt-4 mb-1">
+                                        <span className="font-label-caps text-[10px] text-tertiary-fixed uppercase tracking-widest">Clinical Data</span>
+                                    </div>
+                                    <a onClick={() => {setActiveTab('signal'); setIsSidebarOpen(false);}} className={`flex items-center gap-4 px-4 py-3 rounded-xl cursor-pointer transition-all ${activeTab === 'signal' ? 'text-secondary-fixed bg-white/10 shadow-[inset_4px_0_0_0_#6ff6ff]' : 'text-on-surface-variant hover:text-secondary-fixed hover:bg-white/5'}`}>
+                                        <span className="material-symbols-outlined text-[20px]">waves</span> Signal Acquisition
+                                    </a>
+                                    <a onClick={() => {setActiveTab('history'); setIsSidebarOpen(false);}} className={`flex items-center gap-4 px-4 py-3 rounded-xl cursor-pointer transition-all ${activeTab === 'history' ? 'text-secondary-fixed bg-white/10 shadow-[inset_4px_0_0_0_#6ff6ff]' : 'text-on-surface-variant hover:text-secondary-fixed hover:bg-white/5'}`}>
+                                        <span className="material-symbols-outlined text-[20px]">history_edu</span> History & Logs
+                                    </a>
+
+                                    {/* KATEGORI 3: SYSTEM CONTROL */}
+                                    <div className="px-4 py-2 mt-4 mb-1">
+                                        <span className="font-label-caps text-[10px] text-tertiary-fixed uppercase tracking-widest">System Control</span>
+                                    </div>
+                                    <a onClick={() => {setActiveTab('device'); setIsSidebarOpen(false);}} className={`flex items-center gap-4 px-4 py-3 rounded-xl cursor-pointer transition-all ${activeTab === 'device' ? 'text-secondary-fixed bg-white/10 shadow-[inset_4px_0_0_0_#6ff6ff]' : 'text-on-surface-variant hover:text-secondary-fixed hover:bg-white/5'}`}>
+                                        <span className="material-symbols-outlined text-[20px]">developer_board</span> Device Management
                                     </a>
                                 </React.Fragment>
                             )}
                         </div>
-                        <div className="px-4 mt-auto">
-                            <a onClick={onLogout} className="flex items-center gap-4 px-4 py-3 rounded-lg text-error hover:bg-white/10 transition-all font-body-md text-body-md cursor-pointer">
-                                <span className="material-symbols-outlined">logout</span> Terminate Session
+                        <div className="px-4 mt-6">
+                            <a onClick={onLogout} className="flex items-center gap-4 px-4 py-3 rounded-xl text-error hover:bg-error/10 hover:shadow-[inset_4px_0_0_0_#ffb4ab] transition-all font-body-md text-body-md cursor-pointer group">
+                                <span className="material-symbols-outlined group-hover:drop-shadow-[0_0_8px_rgba(255,180,171,0.8)] text-[20px]">logout</span> Terminate Session
                             </a>
                         </div>
                     </nav>
@@ -1084,7 +1305,6 @@
                         {/* HEADER */}
                         <header className="bg-surface/30 backdrop-blur-xl docked full-width top-0 border-b border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] flex justify-between items-center w-full px-4 sm:px-8 h-20 sticky z-30">
                             <div className="flex items-center gap-3">
-                                {/* Hamburger Menu untuk Mobile */}
                                 <button 
                                     className="lg:hidden text-on-surface-variant hover:text-white p-2 mr-1 rounded-full flex items-center justify-center bg-white/5 border border-white/10"
                                     onClick={() => setIsSidebarOpen(true)}
@@ -1106,85 +1326,165 @@
 
                         <div className="p-4 sm:p-8 max-w-container-max mx-auto w-full flex-1">
                             
-                            {/* USER VIEW: DASHBOARD */}
+                            {/* USER VIEW: DASHBOARD (9 PARAMETER + WAVEFORM) */}
                             {!isAdmin && activeTab === 'dashboard' && (
-                                <React.Fragment>
+                                <div className="animate-fade-in">
                                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-6 sm:mb-8 gap-4">
                                         <div>
                                             <h2 className="font-h2 text-[24px] sm:text-h2 font-bold text-on-surface tracking-tight mb-2">Patient Overview</h2>
                                             <p className="font-body-md text-sm sm:text-body-md text-on-surface-variant">Real-time telemetry and metabolic indicators.</p>
                                         </div>
-                                        <button className="flex items-center justify-center w-full sm:w-auto gap-2 bg-white/5 border border-white/20 px-4 py-3 sm:py-2 rounded-lg font-label-caps text-label-caps text-secondary hover:bg-white/10 transition-colors uppercase">
-                                            <span className="material-symbols-outlined text-[18px]">sync</span> Sync Data
-                                        </button>
+                                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                                            <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white/5 border border-white/20 px-4 py-3 sm:py-2 rounded-xl font-label-caps text-label-caps text-secondary-fixed hover:bg-white/10 transition-colors uppercase shadow-[0_0_15px_rgba(111,246,255,0.1)]">
+                                                <span className="material-symbols-outlined text-[18px]">sync</span> Sync
+                                            </button>
+                                            <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-tertiary-fixed text-surface-container-lowest px-4 py-3 sm:py-2 rounded-xl font-label-caps text-label-caps hover:opacity-90 transition-colors uppercase shadow-[0_0_15px_rgba(155,203,255,0.3)]">
+                                                <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span> Report
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-                                        <div className="glass-card rounded-xl p-6 sm:p-card-padding flex flex-col xl:col-span-8">
+                                    {/* BARIS 1: KARDIOVASKULAR & BASAL (5 Parameter) */}
+                                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-6">
+                                        {/* Kartu Kardiovaskular (Span 8) */}
+                                        <div className="glass-card rounded-2xl p-6 flex flex-col shadow-[0_8px_32px_0_rgba(0,0,0,0.2)] xl:col-span-8 border-t-2 border-t-secondary-fixed">
                                             <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
                                                 <div className="flex items-center gap-3">
                                                     <span className="material-symbols-outlined text-secondary-fixed">monitor_heart</span>
-                                                    <h3 className="font-h3 text-[18px] sm:text-h3 text-on-surface">Primary Vitals</h3>
+                                                    <h3 className="font-h3 text-[18px] sm:text-h3 text-on-surface">Cardiovascular Vitals</h3>
                                                 </div>
-                                                <span className="font-label-caps text-label-caps text-on-surface-variant uppercase bg-surface-container-high/80 px-2 py-1 rounded border border-white/10">Live</span>
+                                                <span className="font-label-caps text-[10px] text-surface-container-lowest bg-secondary-fixed px-2 py-1 rounded border border-secondary-fixed flex items-center gap-1.5 font-bold uppercase"><span className="w-1.5 h-1.5 bg-surface-container-lowest rounded-full animate-ping"></span> Live</span>
                                             </div>
                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-2 flex-1 divide-y sm:divide-y-0 sm:divide-x divide-white/10">
-                                                <div className="flex flex-col pt-4 sm:pt-0">
+                                                <div className="flex flex-col pt-4 sm:pt-0 relative group cursor-default">
                                                     <span className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">Heart Rate</span>
                                                     <div className="flex items-baseline gap-2">
-                                                        <span className="font-data-display text-[36px] sm:text-data-display text-secondary-fixed">72</span>
+                                                        <span className="font-data-display text-[36px] sm:text-[42px] text-secondary-fixed group-hover:drop-shadow-[0_0_15px_rgba(111,246,255,0.6)] transition-all">72</span>
                                                         <span className="font-body-md text-body-md text-on-surface-variant">BPM</span>
                                                     </div>
                                                 </div>
-                                                <div className="flex flex-col pt-4 sm:pt-0 sm:pl-6">
+                                                <div className="flex flex-col pt-4 sm:pt-0 sm:pl-6 relative group cursor-default">
                                                     <span className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">Blood Oxygen</span>
                                                     <div className="flex items-baseline gap-2">
-                                                        <span className="font-data-display text-[36px] sm:text-data-display text-on-surface">98</span>
-                                                        <span className="font-body-md text-body-md text-on-surface-variant">%</span>
+                                                        <span className="font-data-display text-[36px] sm:text-[42px] text-white">98</span>
+                                                        <span className="font-body-md text-body-md text-on-surface-variant">% SpO2</span>
                                                     </div>
                                                 </div>
-                                                <div className="flex flex-col pt-4 sm:pt-0 sm:pl-6">
+                                                <div className="flex flex-col pt-4 sm:pt-0 sm:pl-6 relative group cursor-default">
                                                     <span className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">Est. Blood Pressure</span>
                                                     <div className="flex items-baseline gap-2">
-                                                        <span className="font-data-display text-[32px] sm:text-[32px] text-on-surface">118<span className="text-[18px] sm:text-[20px] text-on-surface-variant mx-1">/</span>76</span>
-                                                        <span className="font-body-md text-[12px] sm:text-body-md text-on-surface-variant">mmHg</span>
+                                                        <span className="font-data-display text-[32px] sm:text-[36px] text-white">118<span className="text-[18px] sm:text-[20px] text-on-surface-variant mx-1">/</span>76</span>
+                                                        <span className="font-body-md text-[10px] sm:text-[12px] text-on-surface-variant leading-tight">mmHg</span>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="glass-card rounded-xl p-6 sm:p-card-padding flex flex-col xl:col-span-4">
+                                        {/* Kartu Basal & Pernapasan (Span 4) */}
+                                        <div className="glass-card rounded-2xl p-6 flex flex-col shadow-[0_8px_32px_0_rgba(0,0,0,0.2)] xl:col-span-4 border-t-2 border-t-tertiary-fixed">
                                             <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
                                                 <div className="flex items-center gap-3">
-                                                    <span className="material-symbols-outlined text-tertiary-fixed" style={{ fontVariationSettings: "'FILL' 1" }}>device_thermostat</span>
-                                                    <h3 className="font-h3 text-[18px] sm:text-[20px] text-on-surface">Basal & Env</h3>
+                                                    <span className="material-symbols-outlined text-tertiary-fixed">air</span>
+                                                    <h3 className="font-h3 text-[18px] sm:text-[20px] text-on-surface">Basal & Resp</h3>
                                                 </div>
                                             </div>
-                                            <div className="flex flex-col gap-6">
-                                                <div>
-                                                    <span className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2 block">Body Temp</span>
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="font-data-display text-[32px] text-on-surface">36.8<span className="text-[20px] text-on-surface-variant ml-1">°C</span></div>
-                                                        <div className="flex-1 h-2 bg-surface-container-high/50 rounded-full overflow-hidden border border-white/5">
-                                                            <div className="h-full bg-gradient-to-r from-tertiary-fixed to-secondary-fixed w-[70%]"></div>
-                                                        </div>
+                                            <div className="flex flex-col gap-5 flex-1 justify-center">
+                                                <div className="flex justify-between items-center group cursor-default">
+                                                    <div>
+                                                        <span className="font-label-caps text-[10px] text-on-surface-variant uppercase mb-1 block">Body Temp</span>
+                                                        <div className="font-data-display text-[28px] text-white">36.5<span className="text-[16px] text-tertiary-fixed ml-1">°C</span></div>
                                                     </div>
+                                                    <span className="material-symbols-outlined text-tertiary-fixed/30 text-4xl group-hover:text-tertiary-fixed/70 transition-colors">device_thermostat</span>
                                                 </div>
                                                 <div className="w-full h-px bg-white/10"></div>
-                                                <div>
-                                                    <span className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2 block">Respiration</span>
-                                                    <div className="flex items-baseline gap-2">
-                                                        <span className="font-data-display text-[32px] text-on-surface">16</span>
-                                                        <span className="font-body-md text-body-md text-on-surface-variant">Br/M</span>
+                                                <div className="flex justify-between items-center group cursor-default">
+                                                    <div>
+                                                        <span className="font-label-caps text-[10px] text-on-surface-variant uppercase mb-1 block">Respiration</span>
+                                                        <div className="font-data-display text-[28px] text-white">16<span className="text-[14px] text-on-surface-variant ml-1 font-body-md">Br/M</span></div>
                                                     </div>
-                                                    <div className="mt-2 text-sm text-secondary-fixed flex items-center gap-1 font-body-md">
-                                                        <span className="material-symbols-outlined text-[14px]">air</span> Steady
-                                                    </div>
+                                                    <span className="material-symbols-outlined text-tertiary-fixed/30 text-4xl group-hover:text-tertiary-fixed/70 transition-colors">pulmonology</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                </React.Fragment>
+
+                                    {/* BARIS 2: METABOLIK DARAH (4 Parameter Hematologi) */}
+                                    <div className="glass-card rounded-2xl p-6 flex flex-col shadow-[0_8px_32px_0_rgba(0,0,0,0.2)] mb-6 border-t-2 border-t-primary-fixed relative overflow-hidden">
+                                        <div className="absolute right-0 top-0 opacity-5 pointer-events-none">
+                                            <span className="material-symbols-outlined text-[200px]">bloodtype</span>
+                                        </div>
+                                        <div className="flex items-center gap-3 mb-6 border-b border-white/10 pb-4 relative z-10">
+                                            <span className="material-symbols-outlined text-primary-fixed">science</span>
+                                            <h3 className="font-h3 text-[18px] sm:text-h3 text-on-surface">Blood Metabolics (Non-Invasive)</h3>
+                                        </div>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 relative z-10 divide-x-0 md:divide-x divide-white/10">
+                                            <div className="flex flex-col md:pl-0 group cursor-default">
+                                                <span className="font-label-caps text-[10px] sm:text-[11px] text-on-surface-variant uppercase mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[14px] text-[#ffb4ab]">bloodtype</span> Glukosa</span>
+                                                <div className="flex items-baseline gap-1.5">
+                                                    <span className="font-data-display text-[28px] sm:text-[32px] text-white group-hover:text-[#ffb4ab] transition-colors">95</span>
+                                                    <span className="font-body-md text-[11px] text-on-surface-variant">mg/dL</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col md:pl-6 group cursor-default">
+                                                <span className="font-label-caps text-[10px] sm:text-[11px] text-on-surface-variant uppercase mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[14px] text-primary-fixed">experiment</span> Hemoglobin</span>
+                                                <div className="flex items-baseline gap-1.5">
+                                                    <span className="font-data-display text-[28px] sm:text-[32px] text-white group-hover:text-primary-fixed transition-colors">13.8</span>
+                                                    <span className="font-body-md text-[11px] text-on-surface-variant">g/dL</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col md:pl-6 group cursor-default">
+                                                <span className="font-label-caps text-[10px] sm:text-[11px] text-on-surface-variant uppercase mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[14px] text-tertiary-fixed">water_drop</span> Kolesterol</span>
+                                                <div className="flex items-baseline gap-1.5">
+                                                    <span className="font-data-display text-[28px] sm:text-[32px] text-white group-hover:text-tertiary-fixed transition-colors">165</span>
+                                                    <span className="font-body-md text-[11px] text-on-surface-variant">mg/dL</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col md:pl-6 group cursor-default">
+                                                <span className="font-label-caps text-[10px] sm:text-[11px] text-on-surface-variant uppercase mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[14px] text-secondary-fixed">opacity</span> Asam Urat</span>
+                                                <div className="flex items-baseline gap-1.5">
+                                                    <span className="font-data-display text-[28px] sm:text-[32px] text-white group-hover:text-secondary-fixed transition-colors">5.2</span>
+                                                    <span className="font-body-md text-[11px] text-on-surface-variant">mg/dL</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* BARIS 3: REAL-TIME WAVEFORM */}
+                                    <div className="glass-card rounded-2xl p-6 flex flex-col shadow-[0_8px_32px_0_rgba(0,0,0,0.2)] relative overflow-hidden min-h-[250px]">
+                                        <div className="flex justify-between items-center mb-2 relative z-10">
+                                            <div className="flex items-center gap-3">
+                                                <span className="material-symbols-outlined text-secondary-fixed">graphic_eq</span>
+                                                <h3 className="font-h3 text-[16px] text-on-surface">Real-Time PPG Signal</h3>
+                                            </div>
+                                            <span className="font-mono text-[10px] text-secondary-fixed bg-secondary-fixed/10 px-2 py-0.5 rounded border border-secondary-fixed/20 flex items-center gap-2">
+                                                <span className="w-1.5 h-1.5 bg-secondary-fixed rounded-full animate-pulse"></span> 100 mm/s
+                                            </span>
+                                        </div>
+                                        
+                                        {/* Animasi Grafik Bergerak */}
+                                        <div className="absolute inset-x-0 bottom-0 top-16 flex items-center justify-center overflow-hidden border-t border-white/5">
+                                            {/* Garis Grid Latar Belakang */}
+                                            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:25px_25px]"></div>
+                                            
+                                            {/* Gelombang SVG */}
+                                            <svg className="w-[200%] h-[120%] stroke-secondary-fixed drop-shadow-[0_0_8px_rgba(111,246,255,0.8)]" viewBox="0 0 1000 100" preserveAspectRatio="none" fill="none" strokeWidth="2">
+                                                <g className="animate-[liquidMove1_4s_linear_infinite]">
+                                                    <path d="M0,50 L20,50 L30,30 L45,80 L65,10 L80,60 L90,50 L150,50 L170,50 L180,30 L195,80 L215,10 L230,60 L240,50 L300,50 L320,50 L330,30 L345,80 L365,10 L380,60 L390,50 L450,50 L470,50 L480,30 L495,80 L515,10 L530,60 L540,50 L600,50 L620,50 L630,30 L645,80 L665,10 L680,60 L690,50 L750,50 L770,50 L780,30 L795,80 L815,10 L830,60 L840,50 L900,50 L920,50 L930,30 L945,80 L965,10 L980,60 L990,50 L1050,50" strokeLinecap="round" strokeLinejoin="round"/>
+                                                </g>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* PLACEHOLDER UNTUK MENU LAIN (AGAR TIDAK KOSONG SAAT DIKLIK) */}
+                            {!isAdmin && activeTab !== 'dashboard' && (
+                                <div className="animate-fade-in flex flex-col items-center justify-center min-h-[500px] glass-card rounded-2xl border border-white/5 opacity-70">
+                                    <span className="material-symbols-outlined text-[80px] text-tertiary-fixed/50 mb-6">construction</span>
+                                    <h2 className="font-h2 text-2xl text-white mb-2">Module Under Development</h2>
+                                    <p className="font-body-md text-on-surface-variant text-center max-w-md">Modul <strong className="text-tertiary-fixed capitalize">{activeTab.replace('_', ' ')}</strong> sedang dalam tahap integrasi dengan arsitektur cloud. Silakan kembali ke Main Dashboard.</p>
+                                    <button onClick={() => setActiveTab('dashboard')} className="mt-8 px-6 py-2 rounded-full border border-white/20 text-xs font-label-caps text-white hover:bg-white/10 transition-colors uppercase tracking-widest">Kembali ke Dashboard</button>
+                                </div>
                             )}
 
                             {/* ADMIN VIEW: TAB DATA PENGGUNA */}
