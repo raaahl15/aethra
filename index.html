@@ -17,6 +17,15 @@
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    
+    <!-- EmailJS CDN -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function() {
+            emailjs.init("Et7Lv4Fn__EKiU1gX");
+        })();
+    </script>
+
     <script>
         tailwind.config = {
             darkMode: "class",
@@ -186,8 +195,20 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
+        // ============================================================================
+        // KONFIGURASI EMAILJS (SILA UBAH DI SINI)
+        // ============================================================================
+        const EMAILJS_SERVICE_ID = 'aethra1512';
+        
+        // AMARAN: 'rkjj9ku' adalah tidak sah. Sila masukkan ID yang bermula dengan 'template_'
+        // Anda boleh mendapatkannya di dashboard EmailJS -> Email Templates -> Settings -> Template ID
+        const EMAILJS_TEMPLATE_ID = 'template_9a2nt88'; 
+        
+        const EMAILJS_PUBLIC_KEY = 'Et7Lv4Fn__EKiU1gX';
+        // ============================================================================
+
         // --- PAGE: AUTH CONTAINER (VIRAL TIKTOK SPLIT-SCREEN ANIMATION) ---
-        const AuthContainer = ({ navigate, onLogin, onSignUp }) => {
+        const AuthContainer = ({ navigate, onLogin, onSignUp, checkEmailExists }) => {
             const [isLogin, setIsLogin] = useState(true);
 
             // States for Login
@@ -203,10 +224,29 @@
             const [signUpError, setSignUpError] = useState('');
             const [isSignUpLoading, setIsSignUpLoading] = useState(false);
 
+            // States for OTP Verification
+            const [isOtpMode, setIsOtpMode] = useState(false);
+            const [generatedOtp, setGeneratedOtp] = useState('');
+            const [inputOtp, setInputOtp] = useState('');
+            const [resendTimer, setResendTimer] = useState(0);
+
+            // Timer countdown effect
+            useEffect(() => {
+                let interval;
+                if (resendTimer > 0) {
+                    interval = setInterval(() => {
+                        setResendTimer((prev) => prev - 1);
+                    }, 1000);
+                }
+                return () => clearInterval(interval);
+            }, [resendTimer]);
+
             const toggleMode = () => {
                 setIsLogin(!isLogin);
                 setLoginError('');
                 setSignUpError('');
+                setIsOtpMode(false);
+                setInputOtp('');
             };
 
             const handleLoginSubmit = async (e) => {
@@ -226,8 +266,45 @@
                 }
             };
 
-            const handleSignUpSubmit = async (e) => {
+            const sendOtpCode = () => {
+                const otp = Math.floor(100000 + Math.random() * 900000).toString(); // Generate 6 digit angka acak
+                setGeneratedOtp(otp);
+                setIsOtpMode(true);
+                setResendTimer(60); // Cooldown resend 60 detik
+                setIsSignUpLoading(true);
+
+                const templateParams = {
+                    email: signUpEmail,      // Menyokong templat jika menggunakan {{email}}
+                    to_email: signUpEmail,   // Menyokong templat jika menggunakan {{to_email}}
+                    to_name: signUpFullName,
+                    otp: otp
+                };
+
+                // Memanggil EmailJS dengan parameter yang telah diekstrak di atas
+                emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams, EMAILJS_PUBLIC_KEY)
+                    .then((response) => {
+                        console.log('SUCCESS! Email terkirim', response.status, response.text);
+                        setIsSignUpLoading(false);
+                        setSignUpError(''); 
+                    }, (error) => {
+                        console.error('FAILED...', error);
+                        setIsSignUpLoading(false);
+                        // Menangani error jika Template ID belum tersimpan atau salah
+                        if (error && error.status === 400 && error.text && error.text.includes("template ID not found")) {
+                             setSignUpError(`Ralat: Template ID "${EMAILJS_TEMPLATE_ID}" tidak sah. Sila semak tab 'Settings' pada templat di EmailJS anda. Ia sepatutnya kelihatan seperti 'template_xxxxx'.`);
+                        } else if (error && error.status === 422 && error.text && error.text.includes("recipients address is empty")) {
+                             setSignUpError('Ralat: Pembolehubah "To Email" di dalam templat EmailJS anda tidak sepadan. Sila pastikan anda meletakkan {{to_email}} pada ruangan To Email di Settings templat.');
+                        } else {
+                             setSignUpError('Gagal menghantar e-mel pengesahan. Sila pastikan konfigurasi EmailJS anda adalah betul.');
+                        }
+                        setIsOtpMode(false);
+                    });
+            };
+
+            const handleSignUpRequest = async (e) => {
                 e.preventDefault();
+                setSignUpError('');
+                
                 if(!signUpFullName || !signUpEmail || !signUpPassword) {
                     setSignUpError('Semua kolom harus diisi.');
                     return;
@@ -237,6 +314,33 @@
                     return;
                 }
                 
+                if (EMAILJS_TEMPLATE_ID === 'YOUR_TEMPLATE_ID') {
+                    setSignUpError('Pembangun: Sila kemaskini EMAILJS_TEMPLATE_ID di dalam kod terlebih dahulu.');
+                    return;
+                }
+                
+                setIsSignUpLoading(true);
+                const emailExists = await checkEmailExists(signUpEmail);
+                setIsSignUpLoading(false);
+
+                if (emailExists) {
+                    setSignUpError('Akses Ditolak: Email ini sudah terdaftar di sistem Aethra.');
+                    return;
+                }
+
+                // Lolos pengecekan, kirim OTP
+                sendOtpCode();
+            };
+
+            const handleVerifyOtpAndRegister = async (e) => {
+                e.preventDefault();
+                setSignUpError('');
+
+                if (inputOtp !== generatedOtp) {
+                    setSignUpError('Kode Otentikasi tidak valid. Silakan coba lagi.');
+                    return;
+                }
+
                 setIsSignUpLoading(true);
                 const success = await onSignUp(signUpFullName, signUpEmail, signUpPassword);
                 setIsSignUpLoading(false);
@@ -244,7 +348,7 @@
                 if (success) {
                     navigate('home');
                 } else {
-                    setSignUpError('Pendaftaran gagal. Email ini mungkin sudah terdaftar.');
+                    setSignUpError('Pendaftaran gagal saat inisiasi database.');
                 }
             };
 
@@ -255,7 +359,7 @@
                     <div className="lg:hidden absolute top-[-10%] left-[-10%] w-[300px] h-[300px] bg-secondary-fixed/20 rounded-full blur-[80px]"></div>
                     <div className="lg:hidden absolute bottom-[-10%] right-[-10%] w-[300px] h-[300px] bg-tertiary-fixed/20 rounded-full blur-[80px]"></div>
                     <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=1200')] opacity-10 bg-cover bg-center mix-blend-overlay"></div>
-                    
+
                     {/* --- DESKTOP BRANDING PANEL (THE SLIDING DOOR) --- */}
                     <div className={`hidden lg:block absolute top-0 w-1/2 h-full z-20 transition-transform duration-[1000ms] ease-in-out ${isLogin ? 'translate-x-0' : 'translate-x-full'}`}>
                         <div className="relative w-full h-full overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] bg-surface/50 backdrop-blur-md border-x border-white/5">
@@ -333,7 +437,6 @@
                                         <div className="space-y-1.5">
                                             <label className="block font-label-caps text-[9px] sm:text-[10px] text-on-surface-variant uppercase tracking-widest pl-1">username</label>
                                             <div className="relative group">
-                                                {/* PENAMBAHAN z-10 pointer-events-none agar icon di atas kaca blur */}
                                                 <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant text-[18px] sm:text-[24px] group-focus-within:text-secondary transition-colors z-10 pointer-events-none">person</span>
                                                 <input className="glass-input w-full rounded-2xl pl-10 sm:pl-12 pr-4 py-3 sm:py-4 text-sm sm:text-base text-white placeholder-on-surface-variant/40 font-body-md transition-all" placeholder="Masukkan email..." type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
                                             </div>
@@ -344,7 +447,6 @@
                                                 <a className="font-label-caps text-[9px] sm:text-[10px] text-secondary-fixed hover:text-white transition-colors cursor-pointer uppercase tracking-widest">Recover?</a>
                                             </div>
                                             <div className="relative group">
-                                                {/* PENAMBAHAN z-10 pointer-events-none agar icon di atas kaca blur */}
                                                 <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant text-[18px] sm:text-[24px] group-focus-within:text-secondary transition-colors z-10 pointer-events-none">lock</span>
                                                 <input className="glass-input w-full rounded-2xl pl-10 sm:pl-12 pr-4 py-3 sm:py-4 text-sm sm:text-base text-white placeholder-on-surface-variant/40 font-body-md transition-all" placeholder="••••••••" type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} />
                                             </div>
@@ -396,35 +498,74 @@
                                         </div>
                                     )}
                                     
-                                    <form className="flex flex-col gap-5" onSubmit={handleSignUpSubmit}>
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="font-label-caps text-[9px] sm:text-[10px] text-on-surface-variant uppercase tracking-widest pl-1">Nama Lengkap</label>
-                                            <div className="relative group">
-                                                {/* PENAMBAHAN z-10 pointer-events-none agar icon di atas kaca blur */}
-                                                <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant text-[18px] sm:text-[24px] group-focus-within:text-tertiary-fixed transition-colors z-10 pointer-events-none">person_add</span>
-                                                <input className="glass-input w-full rounded-2xl pl-10 sm:pl-12 pr-4 py-3 sm:py-4 text-sm sm:text-base text-white placeholder-on-surface-variant/40 font-body-md transition-all" placeholder="Masukkan nama Anda" type="text" value={signUpFullName} onChange={(e) => setSignUpFullName(e.target.value)} />
+                                    <form className="flex flex-col gap-5" onSubmit={isOtpMode ? handleVerifyOtpAndRegister : handleSignUpRequest}>
+                                        {!isOtpMode ? (
+                                            <React.Fragment>
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="font-label-caps text-[9px] sm:text-[10px] text-on-surface-variant uppercase tracking-widest pl-1">Nama Lengkap</label>
+                                                    <div className="relative group">
+                                                        <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant text-[18px] sm:text-[24px] group-focus-within:text-tertiary-fixed transition-colors z-10 pointer-events-none">person_add</span>
+                                                        <input className="glass-input w-full rounded-2xl pl-10 sm:pl-12 pr-4 py-3 sm:py-4 text-sm sm:text-base text-white placeholder-on-surface-variant/40 font-body-md transition-all" placeholder="Masukkan nama Anda" type="text" value={signUpFullName} onChange={(e) => setSignUpFullName(e.target.value)} disabled={isSignUpLoading} />
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="font-label-caps text-[9px] sm:text-[10px] text-on-surface-variant uppercase tracking-widest pl-1">Email Operatif</label>
+                                                    <div className="relative group">
+                                                        <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant text-[18px] sm:text-[24px] group-focus-within:text-tertiary-fixed transition-colors z-10 pointer-events-none">badge</span>
+                                                        <input className="glass-input w-full rounded-2xl pl-10 sm:pl-12 pr-4 py-3 sm:py-4 text-sm sm:text-base text-white placeholder-on-surface-variant/40 font-body-md transition-all" placeholder="Masukkan email" type="email" value={signUpEmail} onChange={(e) => setSignUpEmail(e.target.value)} disabled={isSignUpLoading} />
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="font-label-caps text-[9px] sm:text-[10px] text-on-surface-variant uppercase tracking-widest pl-1">Kata Sandi</label>
+                                                    <div className="relative group">
+                                                        <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant text-[18px] sm:text-[24px] group-focus-within:text-tertiary-fixed transition-colors z-10 pointer-events-none">lock</span>
+                                                        <input className="glass-input w-full rounded-2xl pl-10 sm:pl-12 pr-4 py-3 sm:py-4 text-sm sm:text-base text-white placeholder-on-surface-variant/40 font-body-md transition-all" placeholder="••••••••" type="password" value={signUpPassword} onChange={(e) => setSignUpPassword(e.target.value)} disabled={isSignUpLoading} />
+                                                    </div>
+                                                </div>
+                                                <button disabled={isSignUpLoading} className="w-full mt-4 bg-gradient-to-r from-tertiary-fixed to-secondary-container text-on-secondary-container font-h3 text-base sm:text-[18px] py-3.5 sm:py-4 rounded-2xl neon-glow transition-all hover:scale-[1.02] active:scale-[0.98] flex justify-center items-center gap-2 sm:gap-3 shadow-[0_0_20px_rgba(155,203,255,0.4)] disabled:opacity-70 disabled:hover:scale-100" type="submit">
+                                                    {isSignUpLoading ? 'Mengecek Data...' : 'Minta Kode Verifikasi'}
+                                                    <span className="material-symbols-outlined text-[18px] sm:text-[24px]">forward_to_inbox</span>
+                                                </button>
+                                            </React.Fragment>
+                                        ) : (
+                                            <div className="flex flex-col gap-4 w-full">
+                                                <div className="text-center p-4 bg-tertiary-fixed/10 border border-tertiary-fixed/20 rounded-xl mb-2">
+                                                    <span className="material-symbols-outlined text-tertiary-fixed mb-2 text-3xl">mark_email_read</span>
+                                                    <p className="font-body-md text-xs sm:text-sm text-on-surface-variant">Kode otentikasi telah dikirim ke:<br/><span className="text-white font-bold">{signUpEmail}</span></p>
+                                                </div>
+                                                <div className="flex flex-col gap-1.5">
+                                                    <label className="font-label-caps text-[9px] sm:text-[10px] text-tertiary-fixed uppercase tracking-widest pl-1 text-center">Masukkan 6 Digit Kode</label>
+                                                    <input 
+                                                        className="glass-input w-full rounded-2xl px-4 py-4 text-xl sm:text-2xl text-center text-white placeholder-on-surface-variant/40 font-mono tracking-[0.5em] transition-all" 
+                                                        placeholder="------" 
+                                                        type="text" 
+                                                        maxLength="6"
+                                                        value={inputOtp} 
+                                                        onChange={(e) => setInputOtp(e.target.value.replace(/\D/g, ''))} 
+                                                        disabled={isSignUpLoading} 
+                                                    />
+                                                </div>
+                                                <button disabled={isSignUpLoading || inputOtp.length < 6} className="w-full mt-2 bg-gradient-to-r from-tertiary-fixed to-secondary-container text-on-secondary-container font-h3 text-base sm:text-[18px] py-3.5 sm:py-4 rounded-2xl neon-glow transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 flex justify-center items-center gap-2 sm:gap-3 shadow-[0_0_20px_rgba(155,203,255,0.4)]" type="submit">
+                                                    {isSignUpLoading ? 'Memverifikasi...' : 'Registrasi Sistem'}
+                                                    <span className="material-symbols-outlined text-[18px] sm:text-[24px]">verified</span>
+                                                </button>
+                                                
+                                                <div className="text-center mt-2">
+                                                    {resendTimer > 0 ? (
+                                                        <p className="font-body-md text-[11px] sm:text-xs text-on-surface-variant">
+                                                            Kirim ulang kode dalam <span className="text-tertiary-fixed font-mono">{resendTimer}s</span>
+                                                        </p>
+                                                    ) : (
+                                                        <a onClick={sendOtpCode} className="font-body-md text-[11px] sm:text-xs text-tertiary-fixed hover:text-white font-bold transition-colors cursor-pointer underline underline-offset-2 decoration-tertiary-fixed/30">
+                                                            Kirim Ulang Kode (Resend)
+                                                        </a>
+                                                    )}
+                                                </div>
+                                                <a onClick={() => setIsOtpMode(false)} className="text-center font-body-md text-[10px] sm:text-[11px] text-on-surface-variant/70 hover:text-white transition-colors cursor-pointer mt-2">
+                                                    ← Batal dan edit data
+                                                </a>
                                             </div>
-                                        </div>
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="font-label-caps text-[9px] sm:text-[10px] text-on-surface-variant uppercase tracking-widest pl-1">Email Operatif</label>
-                                            <div className="relative group">
-                                                {/* PENAMBAHAN z-10 pointer-events-none agar icon di atas kaca blur */}
-                                                <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant text-[18px] sm:text-[24px] group-focus-within:text-tertiary-fixed transition-colors z-10 pointer-events-none">badge</span>
-                                                <input className="glass-input w-full rounded-2xl pl-10 sm:pl-12 pr-4 py-3 sm:py-4 text-sm sm:text-base text-white placeholder-on-surface-variant/40 font-body-md transition-all" placeholder="Masukkan email" type="email" value={signUpEmail} onChange={(e) => setSignUpEmail(e.target.value)} />
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col gap-1.5">
-                                            <label className="font-label-caps text-[9px] sm:text-[10px] text-on-surface-variant uppercase tracking-widest pl-1">Kata Sandi</label>
-                                            <div className="relative group">
-                                                {/* PENAMBAHAN z-10 pointer-events-none agar icon di atas kaca blur */}
-                                                <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant text-[18px] sm:text-[24px] group-focus-within:text-tertiary-fixed transition-colors z-10 pointer-events-none">lock</span>
-                                                <input className="glass-input w-full rounded-2xl pl-10 sm:pl-12 pr-4 py-3 sm:py-4 text-sm sm:text-base text-white placeholder-on-surface-variant/40 font-body-md transition-all" placeholder="••••••••" type="password" value={signUpPassword} onChange={(e) => setSignUpPassword(e.target.value)} />
-                                            </div>
-                                        </div>
-                                        <button disabled={isSignUpLoading} className="w-full mt-4 bg-gradient-to-r from-tertiary-fixed to-secondary-container text-on-secondary-container font-h3 text-base sm:text-[18px] py-3.5 sm:py-4 rounded-2xl neon-glow transition-all hover:scale-[1.02] active:scale-[0.98] flex justify-center items-center gap-2 sm:gap-3 shadow-[0_0_20px_rgba(155,203,255,0.4)]" type="submit">
-                                            {isSignUpLoading ? 'Menyimpan...' : 'Registrasi Sistem'}
-                                            <span className="material-symbols-outlined text-[18px] sm:text-[24px]">person_add</span>
-                                        </button>
+                                        )}
                                     </form>
                                     <div className="mt-6 text-center lg:text-left pt-5 border-t border-white/10">
                                         <p className="font-body-md text-[11px] sm:text-sm text-on-surface-variant">
@@ -928,6 +1069,20 @@
                 } catch(e) {}
             }, [dbReady]);
 
+            // --- FUNGSI BARU: CEK EMAIL DUPLIKAT ---
+            const checkEmailExists = async (email) => {
+                if (!dbReady || !window.db) return false;
+                try {
+                    const usersRef = window.fbCollection(window.db, 'users');
+                    const q = window.fbQuery(usersRef, window.fbWhere("email", "==", email));
+                    const querySnapshot = await window.fbGetDocs(q);
+                    return !querySnapshot.empty; // True jika email sudah ada
+                } catch (e) {
+                    console.error("Error checking email:", e);
+                    return true; // Anggap ada jika error untuk mencegah eksploitasi
+                }
+            };
+
             const handleSignUp = async (fullName, email, password) => {
                 const userExists = users.find(u => u.email === email);
                 if (userExists) return false; 
@@ -977,7 +1132,7 @@
             const renderPage = () => {
                 switch(currentPage) {
                     case 'auth': 
-                        return <AuthContainer navigate={setCurrentPage} onLogin={handleLogin} onSignUp={handleSignUp} />;
+                        return <AuthContainer navigate={setCurrentPage} onLogin={handleLogin} onSignUp={handleSignUp} checkEmailExists={checkEmailExists} />;
                     case 'home': 
                         return <HomePage navigate={setCurrentPage} currentUser={currentUser} />;
                     case 'about': 
@@ -985,7 +1140,7 @@
                     case 'dashboard': 
                         return <DashboardPage navigate={setCurrentPage} currentUser={currentUser} onLogout={handleLogout} usersList={users} />;
                     default: 
-                        return <AuthContainer navigate={setCurrentPage} onLogin={handleLogin} onSignUp={handleSignUp} />;
+                        return <AuthContainer navigate={setCurrentPage} onLogin={handleLogin} onSignUp={handleSignUp} checkEmailExists={checkEmailExists} />;
                 }
             };
 
