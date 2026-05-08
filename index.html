@@ -123,13 +123,16 @@
         }
         .fill-icon { font-variation-settings: 'FILL' 1; }
         
-        /* Optimasi Glassmorphism agar lebih kontras dengan background cair */
+        /* Optimasi Glassmorphism yang lebih halus (hilangkan garis bayang hitam keras) */
         .glass-panel, .glass-card {
-            background: rgba(5, 20, 36, 0.45) !important;
-            backdrop-filter: blur(25px) saturate(180%);
-            -webkit-backdrop-filter: blur(25px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            background: rgba(3, 15, 25, 0.35) !important; /* Warna biru gelap yang lebih telus */
+            backdrop-filter: blur(20px) saturate(150%);
+            -webkit-backdrop-filter: blur(20px) saturate(150%);
+            border: 1px solid rgba(255, 255, 255, 0.08) !important; /* Garis sempadan putih yang sangat nipis */
+            /* Menggantikan bayang hitam pekat dengan bayang lembut berlapis (glowing cyan) */
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.2), 
+                0 0 40px rgba(0, 241, 253, 0.08) !important;
         }
         .glass-input, .input-glass {
             background: rgba(255, 255, 255, 0.03) !important;
@@ -168,6 +171,36 @@
         ::-webkit-scrollbar-track { background: #010f1f; }
         ::-webkit-scrollbar-thumb { background: #273647; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #46464c; }
+
+        /* Animasi EKG & Scanner untuk HomePage */
+        @keyframes ekg-wave {
+            0% { stroke-dashoffset: 1000; }
+            100% { stroke-dashoffset: 0; }
+        }
+        .animate-ekg {
+            stroke-dasharray: 1000;
+            animation: ekg-wave 4s linear infinite;
+        }
+        @keyframes float-slow {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-float {
+            animation: float-slow 3s ease-in-out infinite;
+        }
+        .glass-card-interactive {
+            background: rgba(5, 20, 36, 0.45);
+            backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card-interactive:hover {
+            background: rgba(10, 30, 50, 0.6);
+            border-color: rgba(155, 203, 255, 0.3); /* Sentuhan biru pastel saat di-hover */
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px 0 rgba(0, 220, 230, 0.15);
+        }
     </style>
 </head>
 <body>
@@ -176,7 +209,7 @@
     <!-- Modul Firebase ES6 (Harus dipisah agar bisa dibaca Babel) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, query, where, onSnapshot, updateDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Ekspos fungsi Firebase ke window agar React bisa memakainya
         window.fbInitializeApp = initializeApp;
@@ -187,6 +220,8 @@
         window.fbQuery = query;
         window.fbWhere = where;
         window.fbOnSnapshot = onSnapshot;
+        window.fbUpdateDoc = updateDoc; // BARU DITAMBAHKAN
+        window.fbDoc = doc;             // BARU DITAMBAHKAN
 
         // Beri sinyal ke React bahwa Firebase siap
         window.dispatchEvent(new Event('firebaseLoaded'));
@@ -229,6 +264,106 @@
             const [generatedOtp, setGeneratedOtp] = useState('');
             const [inputOtp, setInputOtp] = useState('');
             const [resendTimer, setResendTimer] = useState(0);
+
+            // States for Password Recovery (PEMULIHAN KATA SANDI)
+            const [isRecoverMode, setIsRecoverMode] = useState(false);
+            const [recoverStep, setRecoverStep] = useState(1);
+            const [recoverEmail, setRecoverEmail] = useState('');
+            const [recoverOtp, setRecoverOtp] = useState('');
+            const [inputRecoverOtp, setInputRecoverOtp] = useState('');
+            const [newPassword, setNewPassword] = useState('');
+            const [recoverUserId, setRecoverUserId] = useState(null);
+
+            // --- FUNGSI PEMULIHAN KATA SANDI ---
+            const handleRecoverRequest = async (e) => {
+                e.preventDefault();
+                setLoginError('');
+                setIsLoginLoading(true);
+
+                if (!window.db) return;
+                
+                try {
+                    // Cari email di database
+                    const usersRef = window.fbCollection(window.db, 'users');
+                    const q = window.fbQuery(usersRef, window.fbWhere("email", "==", recoverEmail));
+                    const querySnapshot = await window.fbGetDocs(q);
+
+                    if (querySnapshot.empty) {
+                        setLoginError('Sistem tidak menemukan email ini dalam database.');
+                        setIsLoginLoading(false);
+                        return;
+                    }
+
+                    // Ambil ID dokumen pengguna untuk diupdate nanti
+                    const userDoc = querySnapshot.docs[0];
+                    setRecoverUserId(userDoc.id);
+                    const userData = userDoc.data();
+
+                    // Buat OTP
+                    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+                    setRecoverOtp(otp);
+
+                    const templateParams = {
+                        email: recoverEmail,
+                        to_email: recoverEmail,
+                        to_name: userData.fullName,
+                        otp: otp
+                    };
+
+                    // Kirim Email via EmailJS
+                    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams, EMAILJS_PUBLIC_KEY)
+                        .then(() => {
+                            setIsLoginLoading(false);
+                            setRecoverStep(2); // Pindah ke input OTP
+                        })
+                        .catch(() => {
+                            setIsLoginLoading(false);
+                            setLoginError('Gagal mengirim email pemulihan OTP.');
+                        });
+                } catch (error) {
+                    setIsLoginLoading(false);
+                    setLoginError('Error sistem saat memproses permintaan.');
+                }
+            };
+
+            const handleRecoverVerify = (e) => {
+                e.preventDefault();
+                if (inputRecoverOtp !== recoverOtp) {
+                    setLoginError('Kode OTP tidak valid.');
+                    return;
+                }
+                setLoginError('');
+                setRecoverStep(3); // Pindah ke tampilan input kata sandi baru
+            };
+
+            const handleRecoverReset = async (e) => {
+                e.preventDefault();
+                if (newPassword.length < 6) {
+                    setLoginError('Kata sandi harus terdiri dari minimal 6 karakter.');
+                    return;
+                }
+                setIsLoginLoading(true);
+                try {
+                    // Update kata sandi di Firestore
+                    const userRef = window.fbDoc(window.db, 'users', recoverUserId);
+                    await window.fbUpdateDoc(userRef, { password: newPassword });
+                    
+                    setIsLoginLoading(false);
+                    alert('Sistem Aethra: Kata sandi berhasil diperbarui! Silakan login dengan kata sandi baru Anda.');
+                    
+                    // Reset UI kembali ke tampilan Login
+                    setIsRecoverMode(false);
+                    setRecoverStep(1);
+                    setLoginEmail(recoverEmail);
+                    setRecoverEmail('');
+                    setNewPassword('');
+                    setInputRecoverOtp('');
+                    setLoginPassword('');
+                } catch (error) {
+                    setIsLoginLoading(false);
+                    setLoginError('Error: Gagal memperbarui database.');
+                }
+            };
 
             // Timer countdown effect
             useEffect(() => {
@@ -423,8 +558,12 @@
 
                                 <div className="glass-card lg:bg-transparent lg:border-none lg:shadow-none lg:backdrop-blur-none lg:glass-panel-none rounded-3xl p-6 sm:p-10 w-full mb-6">
                                     <div className="mb-8 text-center lg:text-left">
-                                        <h1 className="font-h2 text-2xl sm:text-h1 text-white mb-1 tracking-tight">Welcome Back</h1>
-                                        <p className="font-body-md text-xs sm:text-body-lg text-secondary-fixed/80">Secure System Access</p>
+                                        <h1 className="font-h2 text-2xl sm:text-h1 text-white mb-1 tracking-tight">
+                                            {isRecoverMode ? 'Recover Access' : 'Welcome Back'}
+                                        </h1>
+                                        <p className="font-body-md text-xs sm:text-body-lg text-secondary-fixed/80">
+                                            {isRecoverMode ? 'Sistem Pemulihan Kredensial' : 'Secure System Access'}
+                                        </p>
                                     </div>
                                     
                                     {loginError && (
@@ -433,34 +572,89 @@
                                         </div>
                                     )}
 
-                                    <form className="space-y-5" onSubmit={handleLoginSubmit}>
-                                        <div className="space-y-1.5">
-                                            <label className="block font-label-caps text-[9px] sm:text-[10px] text-on-surface-variant uppercase tracking-widest pl-1">username</label>
-                                            <div className="relative group">
-                                                <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant text-[18px] sm:text-[24px] group-focus-within:text-secondary transition-colors z-10 pointer-events-none">person</span>
-                                                <input className="glass-input w-full rounded-2xl pl-10 sm:pl-12 pr-4 py-3 sm:py-4 text-sm sm:text-base text-white placeholder-on-surface-variant/40 font-body-md transition-all" placeholder="Masukkan email..." type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
+                                    {!isRecoverMode ? (
+                                        /* --- FORM LOGIN ASLI --- */
+                                        <form className="space-y-5" onSubmit={handleLoginSubmit}>
+                                            <div className="space-y-1.5">
+                                                <label className="block font-label-caps text-[9px] sm:text-[10px] text-on-surface-variant uppercase tracking-widest pl-1">username</label>
+                                                <div className="relative group">
+                                                    <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant text-[18px] sm:text-[24px] group-focus-within:text-secondary transition-colors z-10 pointer-events-none">person</span>
+                                                    <input className="glass-input w-full rounded-2xl pl-10 sm:pl-12 pr-4 py-3 sm:py-4 text-sm sm:text-base text-white placeholder-on-surface-variant/40 font-body-md transition-all" placeholder="Masukkan email..." type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} />
+                                                </div>
                                             </div>
+                                            <div className="space-y-1.5">
+                                                <div className="flex justify-between items-center px-1">
+                                                    <label className="block font-label-caps text-[9px] sm:text-[10px] text-on-surface-variant uppercase tracking-widest">Password</label>
+                                                    <a onClick={() => { setIsRecoverMode(true); setLoginError(''); }} className="font-label-caps text-[9px] sm:text-[10px] text-secondary-fixed hover:text-white transition-colors cursor-pointer uppercase tracking-widest">Recover?</a>
+                                                </div>
+                                                <div className="relative group">
+                                                    <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant text-[18px] sm:text-[24px] group-focus-within:text-secondary transition-colors z-10 pointer-events-none">lock</span>
+                                                    <input className="glass-input w-full rounded-2xl pl-10 sm:pl-12 pr-4 py-3 sm:py-4 text-sm sm:text-base text-white placeholder-on-surface-variant/40 font-body-md transition-all" placeholder="••••••••" type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} />
+                                                </div>
+                                            </div>
+                                            <button disabled={isLoginLoading} className="btn-primary w-full rounded-2xl py-3.5 sm:py-4 font-h3 text-base sm:text-[18px] text-surface-container-lowest font-bold mt-8 flex justify-center items-center gap-2 sm:gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(0,241,253,0.3)]" type="submit">
+                                                {isLoginLoading ? 'Verifikasi...' : 'Login To Sistem'}
+                                                <span className="material-symbols-outlined fill-icon text-[18px] sm:text-[24px]">arrow_forward</span>
+                                            </button>
+                                        </form>
+                                    ) : (
+                                        /* --- FORM PEMULIHAN DINAMIS --- */
+                                        <form className="space-y-5 animate-fade-in" onSubmit={recoverStep === 1 ? handleRecoverRequest : recoverStep === 2 ? handleRecoverVerify : handleRecoverReset}>
+                                            
+                                            {recoverStep === 1 && (
+                                                <div className="space-y-1.5">
+                                                    <label className="block font-label-caps text-[9px] sm:text-[10px] text-on-surface-variant uppercase tracking-widest pl-1">Verifikasi Email Operatif</label>
+                                                    <div className="relative group">
+                                                        <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant text-[18px] sm:text-[24px] group-focus-within:text-secondary transition-colors z-10 pointer-events-none">mail</span>
+                                                        <input className="glass-input w-full rounded-2xl pl-10 sm:pl-12 pr-4 py-3 sm:py-4 text-sm sm:text-base text-white placeholder-on-surface-variant/40 font-body-md transition-all" placeholder="Email terdaftar Anda..." type="email" value={recoverEmail} onChange={(e) => setRecoverEmail(e.target.value)} required />
+                                                    </div>
+                                                    <button disabled={isLoginLoading} className="btn-primary w-full rounded-2xl py-3.5 sm:py-4 font-h3 text-base sm:text-[18px] text-surface-container-lowest font-bold mt-4 flex justify-center items-center gap-2 sm:gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all" type="submit">
+                                                        {isLoginLoading ? 'Mengecek Database...' : 'Kirim Kode Pemulihan'}
+                                                        <span className="material-symbols-outlined fill-icon text-[18px] sm:text-[24px]">send</span>
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {recoverStep === 2 && (
+                                                <div className="space-y-1.5 text-center">
+                                                    <label className="block font-label-caps text-[9px] sm:text-[10px] text-secondary-fixed uppercase tracking-widest mb-2">Kode 6 Digit Dikirim ke<br/>{recoverEmail}</label>
+                                                    <input className="glass-input w-full rounded-2xl px-4 py-3 sm:py-4 text-xl sm:text-2xl text-center text-white font-mono tracking-[0.5em] transition-all" placeholder="------" type="text" maxLength="6" value={inputRecoverOtp} onChange={(e) => setInputRecoverOtp(e.target.value.replace(/\D/g, ''))} required />
+                                                    <button disabled={inputRecoverOtp.length < 6} className="btn-primary w-full rounded-2xl py-3.5 sm:py-4 font-h3 text-base sm:text-[18px] text-surface-container-lowest font-bold mt-4 flex justify-center items-center gap-2 disabled:opacity-50" type="submit">
+                                                        Verifikasi Kode
+                                                        <span className="material-symbols-outlined text-[18px] sm:text-[24px]">verified</span>
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {recoverStep === 3 && (
+                                                <div className="space-y-1.5">
+                                                    <label className="block font-label-caps text-[9px] sm:text-[10px] text-secondary-fixed uppercase tracking-widest pl-1">Kata Sandi Baru</label>
+                                                    <div className="relative group">
+                                                        <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant text-[18px] sm:text-[24px] group-focus-within:text-secondary transition-colors z-10 pointer-events-none">key</span>
+                                                        <input className="glass-input w-full rounded-2xl pl-10 sm:pl-12 pr-4 py-3 sm:py-4 text-sm sm:text-base text-white placeholder-on-surface-variant/40 font-body-md transition-all" placeholder="Min. 6 karakter" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+                                                    </div>
+                                                    <button disabled={isLoginLoading} className="btn-primary w-full rounded-2xl py-3.5 sm:py-4 font-h3 text-base sm:text-[18px] text-surface-container-lowest font-bold mt-4 flex justify-center items-center gap-2" type="submit">
+                                                        {isLoginLoading ? 'Menyimpan...' : 'Simpan Kredensial Baru'}
+                                                        <span className="material-symbols-outlined text-[18px] sm:text-[24px]">save</span>
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            <div className="text-center mt-4 pt-4 border-t border-white/10">
+                                                <a onClick={() => { setIsRecoverMode(false); setRecoverStep(1); setLoginError(''); }} className="font-body-md text-[11px] sm:text-sm text-on-surface-variant hover:text-white transition-colors cursor-pointer">
+                                                    ← Kembali ke Halaman Login
+                                                </a>
+                                            </div>
+                                        </form>
+                                    )}
+
+                                    {!isRecoverMode && (
+                                        <div className="mt-6 text-center lg:text-left pt-5 border-t border-white/10">
+                                            <p className="font-body-md text-[11px] sm:text-sm text-on-surface-variant">
+                                                Belum memiliki akun? <a onClick={toggleMode} className="text-secondary hover:text-white font-bold transition-colors ml-1 cursor-pointer underline underline-offset-2 decoration-secondary/30">Daftar sekarang</a>
+                                            </p>
                                         </div>
-                                        <div className="space-y-1.5">
-                                            <div className="flex justify-between items-center px-1">
-                                                <label className="block font-label-caps text-[9px] sm:text-[10px] text-on-surface-variant uppercase tracking-widest">Password</label>
-                                                <a className="font-label-caps text-[9px] sm:text-[10px] text-secondary-fixed hover:text-white transition-colors cursor-pointer uppercase tracking-widest">Recover?</a>
-                                            </div>
-                                            <div className="relative group">
-                                                <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-on-surface-variant text-[18px] sm:text-[24px] group-focus-within:text-secondary transition-colors z-10 pointer-events-none">lock</span>
-                                                <input className="glass-input w-full rounded-2xl pl-10 sm:pl-12 pr-4 py-3 sm:py-4 text-sm sm:text-base text-white placeholder-on-surface-variant/40 font-body-md transition-all" placeholder="••••••••" type="password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} />
-                                            </div>
-                                        </div>
-                                        <button disabled={isLoginLoading} className="btn-primary w-full rounded-2xl py-3.5 sm:py-4 font-h3 text-base sm:text-[18px] text-surface-container-lowest font-bold mt-8 flex justify-center items-center gap-2 sm:gap-3 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_20px_rgba(0,241,253,0.3)]" type="submit">
-                                            {isLoginLoading ? 'Verifikasi...' : 'Login To Sistem'}
-                                            <span className="material-symbols-outlined fill-icon text-[18px] sm:text-[24px]">arrow_forward</span>
-                                        </button>
-                                    </form>
-                                    <div className="mt-6 text-center lg:text-left pt-5 border-t border-white/10">
-                                        <p className="font-body-md text-[11px] sm:text-sm text-on-surface-variant">
-                                            Belum memiliki akun? <a onClick={toggleMode} className="text-secondary hover:text-white font-bold transition-colors ml-1 cursor-pointer underline underline-offset-2 decoration-secondary/30">Daftar sekarang</a>
-                                        </p>
-                                    </div>
+                                    )}
                                 </div>
 
                                 {/* Mobile Branding Panel */}
@@ -615,51 +809,152 @@
             </header>
         );
 
-        // --- PAGE: HOME ---
-        const HomePage = ({ navigate, currentUser }) => (
-            <div className="min-h-screen overflow-x-hidden flex flex-col relative selection:bg-secondary selection:text-surface-container-lowest w-full">
+        // --- PAGE: HOME (INTERACTIVE DASHBOARD) ---
+        const HomePage = ({ navigate, currentUser }) => {
+            const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString('id-ID', { hour12: false }));
+
+            // Update jam setiap detik untuk interaktivitas
+            useEffect(() => {
+                const timer = setInterval(() => {
+                    setCurrentTime(new Date().toLocaleTimeString('id-ID', { hour12: false }));
+                }, 1000);
+                return () => clearInterval(timer);
+            }, []);
+
+            return (
+                <div className="min-h-screen overflow-x-hidden flex flex-col relative selection:bg-secondary selection:text-surface-container-lowest w-full">
                 <TopHeader navigate={navigate} currentUser={currentUser} />
                 
-                <main className="flex-grow flex flex-col pt-28 sm:pt-32 pb-12 sm:pb-margin-x px-4 sm:px-8 lg:px-margin-x max-w-container-max mx-auto w-full z-10">
-                    <div className="mb-10 sm:mb-12">
-                        <h1 className="font-h1 text-[32px] sm:text-h1 text-on-surface mb-4">Welcome back to Aethra Health Monitoring.</h1>
-                        <p className="font-body-lg text-sm sm:text-body-lg text-on-surface-variant max-w-2xl">Secure, real-time biomedical diagnostics and sensor-to-cloud analytics suite.</p>
-                    </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-gutter flex-grow">
-                        <div className="glass-card rounded-xl p-6 sm:p-card-padding flex flex-col justify-between min-h-[400px] lg:min-h-[500px] group hover:border-white/30 transition-all duration-300">
-                            <div>
-                                <div className="flex items-center gap-3 mb-6">
-                                    <span className="material-symbols-outlined text-secondary" style={{ fontVariationSettings: "'FILL' 1" }}>biotech</span>
-                                    <h2 className="font-h2 text-[24px] sm:text-h2 text-on-surface">About Aethra</h2>
-                                </div>
-                                <p className="font-body-lg text-sm sm:text-body-lg text-on-surface-variant mb-6 leading-relaxed">
-                                    Aethra represents the pinnacle of digital clinical integration. Our proprietary sensor-to-cloud architecture ensures absolute precision in continuous patient monitoring.
-                                </p>
+                <main className="flex-grow flex flex-col pt-24 sm:pt-32 pb-12 sm:pb-margin-x px-4 sm:px-8 lg:px-margin-x max-w-container-max mx-auto w-full z-10">
+                    
+                    {/* HEADER SECTION WITH LIVE STATUS */}
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+                        <div>
+                            <div className="flex items-center gap-3 mb-2">
+                                <h1 className="font-h1 text-[28px] sm:text-[36px] text-on-surface tracking-tight">Console Overview</h1>
+                                <span className="hidden sm:flex bg-tertiary-fixed/10 text-tertiary-fixed border border-tertiary-fixed/20 px-3 py-1 rounded-full text-[10px] font-mono uppercase tracking-widest items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-tertiary-fixed animate-pulse"></span>
+                                    Station Active
+                                </span>
                             </div>
-                            <button onClick={() => navigate('about')} className="mt-8 flex items-center justify-center sm:justify-start gap-2 text-primary hover:text-secondary font-label-caps text-label-caps transition-colors w-full sm:w-fit border border-white/20 bg-white/5 px-6 py-4 sm:py-3 rounded-full hover:bg-white/10">
-                                View Documentation
-                                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-                            </button>
+                            <p className="font-body-md text-sm sm:text-base text-on-surface-variant max-w-2xl">Secure, real-time biomedical diagnostics and sensor-to-cloud analytics suite.</p>
                         </div>
-                        <div className="glass-card rounded-xl p-6 sm:p-card-padding flex flex-col items-center justify-center text-center min-h-[400px] lg:min-h-[500px] relative overflow-hidden group mt-6 lg:mt-0">
-                            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2000&auto=format&fit=crop')] opacity-10 bg-cover bg-center mix-blend-overlay"></div>
-                            <div className="absolute inset-0 bg-gradient-to-t from-surface-container-lowest/80 to-transparent"></div>
-                            <div className="relative z-10 flex flex-col items-center w-full">
-                                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border border-secondary/30 flex items-center justify-center mb-6 sm:mb-8 relative shadow-[0_0_40px_rgba(0,241,253,0.1)]">
-                                    <div className="absolute inset-0 rounded-full border border-secondary/50 animate-[ping_3s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
-                                    <span className="material-symbols-outlined text-secondary text-[36px] sm:text-[48px]">vital_signs</span>
+                        <div className="text-right glass-panel px-4 py-2 rounded-xl border border-white/5">
+                            <p className="text-[10px] font-label-caps text-on-surface-variant uppercase tracking-widest mb-1">Local Server Time</p>
+                            <p className="font-mono text-xl sm:text-2xl text-secondary-fixed drop-shadow-[0_0_8px_rgba(111,246,255,0.4)]">{currentTime}</p>
+                        </div>
+                    </div>
+
+                    {/* QUICK STATS ROW */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <div className="glass-card-interactive rounded-xl p-4 flex flex-col gap-1 border-l-2 border-l-secondary-fixed">
+                            <span className="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-wider flex justify-between">Modul Sensor <span className="material-symbols-outlined text-[14px] text-secondary-fixed">memory</span></span>
+                            <span className="font-data-display text-xl text-white">MAX30102</span>
+                            <span className="font-body-md text-xs text-secondary-fixed">Merespons</span>
+                        </div>
+                        <div className="glass-card-interactive rounded-xl p-4 flex flex-col gap-1 border-l-2 border-l-tertiary-fixed">
+                            <span className="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-wider flex justify-between">Koneksi <span className="material-symbols-outlined text-[14px] text-tertiary-fixed">wifi_tethering</span></span>
+                            <span className="font-data-display text-xl text-white">Modbus TCP</span>
+                            <span className="font-body-md text-xs text-tertiary-fixed">Latensi: 12ms</span>
+                        </div>
+                        <div className="glass-card-interactive rounded-xl p-4 flex flex-col gap-1 border-l-2 border-l-[#00f1fd]">
+                            <span className="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-wider flex justify-between">Unit Desain <span className="material-symbols-outlined text-[14px] text-[#00f1fd]">hardware</span></span>
+                            <span className="font-data-display text-xl text-white">Hand-Grip</span>
+                            <span className="font-body-md text-xs text-[#00f1fd]">Statis Terkalibrasi</span>
+                        </div>
+                        <div className="glass-card-interactive rounded-xl p-4 flex flex-col gap-1 border-l-2 border-l-primary-fixed">
+                            <span className="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-wider flex justify-between">Siklus Data <span className="material-symbols-outlined text-[14px] text-primary-fixed">sync</span></span>
+                            <span className="font-data-display text-xl text-white">1.2 GB</span>
+                            <span className="font-body-md text-xs text-primary-fixed">Tersinkronisasi</span>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+                        {/* LEFT COLUMN: SYSTEM LAUNCHER (SPAN 8) */}
+                        <div className="glass-card rounded-2xl lg:col-span-8 flex flex-col relative overflow-hidden group border border-white/10 hover:border-tertiary-fixed/30 transition-colors duration-500 min-h-[400px]">
+                            <div className="absolute inset-0 bg-gradient-to-br from-tertiary-fixed/5 to-transparent z-0"></div>
+                            
+                            {/* Latar Belakang Animasi Gelombang EKG */}
+                            <div className="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none overflow-hidden">
+                                <svg className="w-[150%] h-[150%] animate-ekg stroke-tertiary-fixed" viewBox="0 0 1000 200" fill="none" strokeWidth="2">
+                                    <path d="M0,100 L200,100 L230,80 L260,140 L300,40 L340,160 L370,100 L1000,100" strokeLinecap="round" strokeLinejoin="round"/>
+                                    <path d="M0,100 L500,100 L530,80 L560,140 L600,40 L640,160 L670,100 L1000,100" strokeLinecap="round" strokeLinejoin="round" transform="translate(300, 0)"/>
+                                </svg>
+                            </div>
+
+                            <div className="relative z-10 p-8 flex flex-col h-full items-center justify-center text-center">
+                                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border border-tertiary-fixed/40 flex items-center justify-center mb-8 relative shadow-[0_0_50px_rgba(155,203,255,0.15)] animate-float bg-surface/50 backdrop-blur-md">
+                                    <div className="absolute inset-0 rounded-full border-2 border-tertiary-fixed/50 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
+                                    <div className="absolute inset-2 rounded-full border border-secondary-fixed/30 animate-[spin_4s_linear_infinite]"></div>
+                                    <span className="material-symbols-outlined text-tertiary-fixed text-[40px] sm:text-[48px]">vital_signs</span>
                                 </div>
-                                <h2 className="font-data-display text-[28px] sm:text-data-display text-on-surface mb-8 tracking-tight">System Ready</h2>
-                                <button onClick={() => navigate('dashboard')} className="w-full sm:w-auto bg-gradient-to-r from-secondary to-[#00c6d4] text-surface-container-lowest font-label-caps text-label-caps px-8 sm:px-10 py-4 sm:py-5 rounded-full flex items-center justify-center gap-3 hover:shadow-[0_0_24px_rgba(0,241,253,0.4)] transition-all duration-300 transform hover:-translate-y-1">
-                                    Start Aethra
-                                    <span className="material-symbols-outlined">login</span>
+                                <h2 className="font-h1 text-[32px] sm:text-[40px] text-white mb-2 tracking-tight">System Ready</h2>
+                                <p className="font-body-md text-on-surface-variant mb-10 max-w-md">Perangkat Hand-Grip / Station telah terhubung ke server awan. Sistem siap untuk akuisisi sinyal biomedis secara real-time.</p>
+                                
+                                <button onClick={() => navigate('dashboard')} className="group relative w-full sm:w-auto overflow-hidden rounded-full bg-gradient-to-r from-tertiary-fixed to-secondary-container p-[1px]">
+                                    <span className="absolute inset-0 bg-gradient-to-r from-tertiary-fixed to-secondary-container opacity-0 transition-opacity duration-300 group-hover:opacity-100"></span>
+                                    <div className="relative flex items-center justify-center gap-3 rounded-full bg-surface-container-lowest px-10 py-4 transition-all duration-300 group-hover:bg-opacity-0 group-hover:text-surface-container-lowest text-tertiary-fixed font-h3 text-lg font-bold">
+                                        Start Aethra Terminal
+                                        <span className="material-symbols-outlined transition-transform duration-300 group-hover:translate-x-1">arrow_forward</span>
+                                    </div>
                                 </button>
+                            </div>
+                        </div>
+                        {/* RIGHT COLUMN: ABOUT & LOGS (SPAN 4) */}
+                        <div className="flex flex-col gap-6 lg:col-span-4">
+                            {/* About Card */}
+                            <div className="glass-card-interactive rounded-2xl p-6 flex flex-col flex-1 relative overflow-hidden">
+                                <div className="absolute -right-10 -top-10 text-white/5 rotate-12 pointer-events-none">
+                                    <span className="material-symbols-outlined text-[150px]">biotech</span>
+                                </div>
+                                <div className="flex items-center gap-3 mb-4 relative z-10">
+                                    <span className="material-symbols-outlined text-secondary-fixed bg-secondary-fixed/10 p-2 rounded-lg">info</span>
+                                    <h2 className="font-h3 text-xl text-white">About Aethra</h2>
+                                </div>
+                                <p className="font-body-md text-sm text-on-surface-variant mb-6 leading-relaxed relative z-10 flex-grow">
+                                    Aethra merepresentasikan integrasi klinis digital tingkat lanjut. Menggunakan arsitektur sensor-ke-awan eksklusif yang dirancang untuk akurasi mutlak dengan palet visual biru pastel untuk kenyamanan pengguna.
+                                </p>
+                                <button onClick={() => navigate('about')} className="flex items-center justify-between w-full text-xs font-label-caps text-secondary-fixed hover:text-white uppercase tracking-widest border-t border-white/10 pt-4 transition-colors">
+                                    View Documentation <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                                </button>
+                            </div>
+
+                            {/* System Logs Mini-Card */}
+                            <div className="glass-card-interactive rounded-2xl p-6 flex flex-col flex-1">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="font-h3 text-base text-white">Recent Activity</h2>
+                                    <span className="material-symbols-outlined text-on-surface-variant text-[18px]">history</span>
+                                </div>
+                                <div className="flex flex-col gap-3">
+                                    <div className="flex gap-3 items-start">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-tertiary-fixed mt-1.5 shrink-0"></div>
+                                        <div>
+                                            <p className="font-body-md text-xs text-white">Autentikasi Modul Berhasil</p>
+                                            <p className="font-body-md text-[10px] text-on-surface-variant">Hari ini, 08:30 WIB</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-3 items-start opacity-70">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-secondary-fixed mt-1.5 shrink-0"></div>
+                                        <div>
+                                            <p className="font-body-md text-xs text-white">Kalibrasi Sensor MAX30102</p>
+                                            <p className="font-body-md text-[10px] text-on-surface-variant">Hari ini, 08:15 WIB</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-3 items-start opacity-50">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-primary-fixed mt-1.5 shrink-0"></div>
+                                        <div>
+                                            <p className="font-body-md text-xs text-white">Sistem Diinisialisasi</p>
+                                            <p className="font-body-md text-[10px] text-on-surface-variant">Hari ini, 08:00 WIB</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </main>
             </div>
         );
+        };
 
         const AboutPage = ({ navigate, currentUser }) => (
             <div className="min-h-screen antialiased flex flex-col relative overflow-x-hidden w-full">
