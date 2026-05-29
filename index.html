@@ -1359,21 +1359,27 @@
                                                 <div className="flex flex-col pt-4 sm:pt-0 relative group cursor-default">
                                                     <span className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">Heart Rate</span>
                                                     <div className="flex items-baseline gap-2">
-                                                        <span className="font-data-display text-[36px] sm:text-[42px] text-secondary-fixed group-hover:drop-shadow-[0_0_15px_rgba(111,246,255,0.6)] transition-all">72</span>
+                                                        <span className="font-data-display text-[36px] sm:text-[42px] text-secondary-fixed group-hover:drop-shadow-[0_0_15px_rgba(111,246,255,0.6)] transition-all">
+                                                            {currentUser.bpm || "0"} 
+                                                        </span>
                                                         <span className="font-body-md text-body-md text-on-surface-variant">BPM</span>
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-col pt-4 sm:pt-0 sm:pl-6 relative group cursor-default">
                                                     <span className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">Blood Oxygen</span>
                                                     <div className="flex items-baseline gap-2">
-                                                        <span className="font-data-display text-[36px] sm:text-[42px] text-white">98</span>
+                                                        <span className="font-data-display text-[36px] sm:text-[42px] text-white">
+                                                            {currentUser.spo2 || "0"}
+                                                        </span>
                                                         <span className="font-body-md text-body-md text-on-surface-variant">% SpO2</span>
                                                     </div>
                                                 </div>
                                                 <div className="flex flex-col pt-4 sm:pt-0 sm:pl-6 relative group cursor-default">
                                                     <span className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">Est. Blood Pressure</span>
                                                     <div className="flex items-baseline gap-2">
-                                                        <span className="font-data-display text-[32px] sm:text-[36px] text-white">118<span className="text-[18px] sm:text-[20px] text-on-surface-variant mx-1">/</span>76</span>
+                                                        <span className="font-data-display text-[32px] sm:text-[36px] text-white">
+                                                            {currentUser.bp_sistolik || "0"}<span className="text-[18px] sm:text-[20px] text-on-surface-variant mx-1">/</span>{currentUser.bp_diastolik || "0"}
+                                                        </span>
                                                         <span className="font-body-md text-[10px] sm:text-[12px] text-on-surface-variant leading-tight">mmHg</span>
                                                     </div>
                                                 </div>
@@ -1392,7 +1398,9 @@
                                                 <div className="flex justify-between items-center group cursor-default">
                                                     <div>
                                                         <span className="font-label-caps text-[10px] text-on-surface-variant uppercase mb-1 block">Body Temp</span>
-                                                        <div className="font-data-display text-[28px] text-white">36.5<span className="text-[16px] text-tertiary-fixed ml-1">°C</span></div>
+                                                        <div className="font-data-display text-[28px] text-white">
+                                                            {currentUser.suhu ? currentUser.suhu.toFixed(1) : "0.0"}<span className="text-[16px] text-tertiary-fixed ml-1">°C</span>
+                                                        </div>
                                                     </div>
                                                     <span className="material-symbols-outlined text-tertiary-fixed/30 text-4xl group-hover:text-tertiary-fixed/70 transition-colors">device_thermostat</span>
                                                 </div>
@@ -1400,7 +1408,9 @@
                                                 <div className="flex justify-between items-center group cursor-default">
                                                     <div>
                                                         <span className="font-label-caps text-[10px] text-on-surface-variant uppercase mb-1 block">Respiration</span>
-                                                        <div className="font-data-display text-[28px] text-white">16<span className="text-[14px] text-on-surface-variant ml-1 font-body-md">Br/M</span></div>
+                                                        <div className="font-data-display text-[28px] text-white">
+                                                            {currentUser.resp || "0"}<span className="text-[14px] text-on-surface-variant ml-1 font-body-md">Br/M</span>
+                                                        </div>
                                                     </div>
                                                     <span className="material-symbols-outlined text-tertiary-fixed/30 text-4xl group-hover:text-tertiary-fixed/70 transition-colors">pulmonology</span>
                                                 </div>
@@ -1421,28 +1431,36 @@
                                             <div className="flex flex-col md:pl-0 group cursor-default">
                                                 <span className="font-label-caps text-[10px] sm:text-[11px] text-on-surface-variant uppercase mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[14px] text-[#ffb4ab]">bloodtype</span> Glukosa</span>
                                                 <div className="flex items-baseline gap-1.5">
-                                                    <span className="font-data-display text-[28px] sm:text-[32px] text-white group-hover:text-[#ffb4ab] transition-colors">95</span>
+                                                    <span className="font-data-display text-[28px] sm:text-[32px] text-white group-hover:text-[#ffb4ab] transition-colors">
+                                                        {currentUser.glukosa || "0"}
+                                                    </span>
                                                     <span className="font-body-md text-[11px] text-on-surface-variant">mg/dL</span>
                                                 </div>
                                             </div>
                                             <div className="flex flex-col md:pl-6 group cursor-default">
                                                 <span className="font-label-caps text-[10px] sm:text-[11px] text-on-surface-variant uppercase mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[14px] text-primary-fixed">experiment</span> Hemoglobin</span>
                                                 <div className="flex items-baseline gap-1.5">
-                                                    <span className="font-data-display text-[28px] sm:text-[32px] text-white group-hover:text-primary-fixed transition-colors">13.8</span>
+                                                    <span className="font-data-display text-[28px] sm:text-[32px] text-white group-hover:text-primary-fixed transition-colors">
+                                                        {currentUser.hemoglobin ? currentUser.hemoglobin.toFixed(1) : "0.0"}
+                                                    </span>
                                                     <span className="font-body-md text-[11px] text-on-surface-variant">g/dL</span>
                                                 </div>
                                             </div>
                                             <div className="flex flex-col md:pl-6 group cursor-default">
                                                 <span className="font-label-caps text-[10px] sm:text-[11px] text-on-surface-variant uppercase mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[14px] text-tertiary-fixed">water_drop</span> Kolesterol</span>
                                                 <div className="flex items-baseline gap-1.5">
-                                                    <span className="font-data-display text-[28px] sm:text-[32px] text-white group-hover:text-tertiary-fixed transition-colors">165</span>
+                                                    <span className="font-data-display text-[28px] sm:text-[32px] text-white group-hover:text-tertiary-fixed transition-colors">
+                                                        {currentUser.kolesterol || "0"}
+                                                    </span>
                                                     <span className="font-body-md text-[11px] text-on-surface-variant">mg/dL</span>
                                                 </div>
                                             </div>
                                             <div className="flex flex-col md:pl-6 group cursor-default">
                                                 <span className="font-label-caps text-[10px] sm:text-[11px] text-on-surface-variant uppercase mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[14px] text-secondary-fixed">opacity</span> Asam Urat</span>
                                                 <div className="flex items-baseline gap-1.5">
-                                                    <span className="font-data-display text-[28px] sm:text-[32px] text-white group-hover:text-secondary-fixed transition-colors">5.2</span>
+                                                    <span className="font-data-display text-[28px] sm:text-[32px] text-white group-hover:text-secondary-fixed transition-colors">
+                                                        {currentUser.asam_urat ? currentUser.asam_urat.toFixed(1) : "0.0"}
+                                                    </span>
                                                     <span className="font-body-md text-[11px] text-on-surface-variant">mg/dL</span>
                                                 </div>
                                             </div>
