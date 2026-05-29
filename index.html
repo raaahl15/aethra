@@ -1682,6 +1682,17 @@
                 } catch(e) {}
             }, [dbReady]);
 
+            // 3. Sinkronisasi Data currentUser secara Real-Time
+            // Memastikan dashboard terupdate otomatis ketika data di Firebase berubah
+            useEffect(() => {
+                if (currentUser && users.length > 0) {
+                    const updatedUser = users.find(u => u.email === currentUser.email);
+                    if (updatedUser) {
+                        setCurrentUser(updatedUser);
+                    }
+                }
+            }, [users, currentUser]);
+
             // --- FUNGSI BARU: CEK EMAIL DUPLIKAT ---
             const checkEmailExists = async (email) => {
                 if (!dbReady || !window.db) return false;
