@@ -263,6 +263,14 @@
         const EMAILJS_PUBLIC_KEY = 'Et7Lv4Fn__EKiU1gX';
         // ============================================================================
 
+        // ============================================================================
+        // KONFIGURASI JSONBIN — GANTI DENGAN MILIK KAMU
+        // Daftar gratis di https://jsonbin.io, buat Bin baru, catat BIN ID & API KEY
+        // ============================================================================
+        const JSONBIN_BIN_ID  = "GANTI_BIN_ID_KAMU";
+        const JSONBIN_API_KEY = "GANTI_API_KEY_KAMU";
+        // ============================================================================
+
         // --- PAGE: AUTH CONTAINER (VIRAL TIKTOK SPLIT-SCREEN ANIMATION) ---
         const AuthContainer = ({ navigate, onLogin, onSignUp, checkEmailExists }) => {
             const [isLogin, setIsLogin] = useState(true);
@@ -1199,6 +1207,39 @@
             
             const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+            // --- STATE & POLLING DATA SENSOR DARI JSONBIN ---
+            const [sensorData, setSensorData] = useState({
+                suhu: 0, bpm: 0, spo2: 0, resp: 0,
+                bp_sistolik: 0, bp_diastolik: 0,
+                glukosa: 0, kolesterol: 0, asam_urat: 0, hemoglobin: 0
+            });
+            const [lastUpdate, setLastUpdate] = useState(null);
+            const [sensorStatus, setSensorStatus] = useState('connecting'); // 'connecting' | 'online' | 'error'
+
+            useEffect(() => {
+                const fetchSensor = async () => {
+                    // Skip jika belum dikonfigurasi
+                    if (JSONBIN_BIN_ID === "GANTI_BIN_ID_KAMU") return;
+                    try {
+                        const res = await fetch(
+                            `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`,
+                            { headers: { "X-Master-Key": JSONBIN_API_KEY } }
+                        );
+                        if (!res.ok) throw new Error("HTTP " + res.status);
+                        const json = await res.json();
+                        setSensorData(json.record);
+                        setLastUpdate(new Date().toLocaleTimeString('id-ID', { hour12: false }));
+                        setSensorStatus('online');
+                    } catch(err) {
+                        console.error("JSONBin fetch error:", err);
+                        setSensorStatus('error');
+                    }
+                };
+                fetchSensor();
+                const interval = setInterval(fetchSensor, 15000); // polling tiap 15 detik
+                return () => clearInterval(interval);
+            }, []);
+
             // Mock Data Generator for Vitals (Khusus Admin View)
             const getMockHealthData = (email) => {
                 const id = email ? email.length : 0;
@@ -1316,6 +1357,13 @@
                                 <span className="font-label-caps text-label-caps text-secondary-fixed uppercase tracking-wider hidden sm:inline-block">System Online</span>
                             </div>
                             <div className="flex items-center gap-4 sm:gap-6">
+                                {/* STATUS SENSOR JSONBIN */}
+                                <div className="hidden sm:flex items-center gap-2 glass-panel px-3 py-1.5 rounded-lg border border-white/5">
+                                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${sensorStatus === 'online' ? 'bg-secondary-fixed animate-pulse' : sensorStatus === 'error' ? 'bg-error' : 'bg-on-surface-variant animate-pulse'}`}></span>
+                                    <span className="font-label-caps text-[9px] text-on-surface-variant uppercase tracking-widest">
+                                        {sensorStatus === 'online' ? `Sensor · ${lastUpdate}` : sensorStatus === 'error' ? 'Sensor Error' : 'Connecting...'}
+                                    </span>
+                                </div>
                                 <div className="text-right hidden sm:block">
                                     <p className="font-body-md text-body-md text-on-surface font-medium truncate max-w-[150px]">{currentUser ? currentUser.fullName : 'Guest'}</p>
                                     <p className="font-label-caps text-[10px] sm:text-label-caps text-on-surface-variant truncate max-w-[150px]">{isAdmin ? 'Superadmin' : (currentUser ? currentUser.email : 'No Access')}</p>
@@ -1360,7 +1408,7 @@
                                                     <span className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">Heart Rate</span>
                                                     <div className="flex items-baseline gap-2">
                                                         <span className="font-data-display text-[36px] sm:text-[42px] text-secondary-fixed group-hover:drop-shadow-[0_0_15px_rgba(111,246,255,0.6)] transition-all">
-                                                            {currentUser.bpm || "0"} 
+                                                            {sensorData?.bpm || "0"} 
                                                         </span>
                                                         <span className="font-body-md text-body-md text-on-surface-variant">BPM</span>
                                                     </div>
@@ -1369,7 +1417,7 @@
                                                     <span className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">Blood Oxygen</span>
                                                     <div className="flex items-baseline gap-2">
                                                         <span className="font-data-display text-[36px] sm:text-[42px] text-white">
-                                                            {currentUser.spo2 || "0"}
+                                                            {sensorData?.spo2 || "0"}
                                                         </span>
                                                         <span className="font-body-md text-body-md text-on-surface-variant">% SpO2</span>
                                                     </div>
@@ -1378,7 +1426,7 @@
                                                     <span className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">Est. Blood Pressure</span>
                                                     <div className="flex items-baseline gap-2">
                                                         <span className="font-data-display text-[32px] sm:text-[36px] text-white">
-                                                            {currentUser.bp_sistolik || "0"}<span className="text-[18px] sm:text-[20px] text-on-surface-variant mx-1">/</span>{currentUser.bp_diastolik || "0"}
+                                                            {sensorData?.bp_sistolik || "0"}<span className="text-[18px] sm:text-[20px] text-on-surface-variant mx-1">/</span>{sensorData?.bp_diastolik || "0"}
                                                         </span>
                                                         <span className="font-body-md text-[10px] sm:text-[12px] text-on-surface-variant leading-tight">mmHg</span>
                                                     </div>
@@ -1399,7 +1447,7 @@
                                                     <div>
                                                         <span className="font-label-caps text-[10px] text-on-surface-variant uppercase mb-1 block">Body Temp</span>
                                                         <div className="font-data-display text-[28px] text-white">
-                                                            {currentUser.suhu ? currentUser.suhu.toFixed(1) : "0.0"}<span className="text-[16px] text-tertiary-fixed ml-1">°C</span>
+                                                            {sensorData?.suhu ? Number(sensorData.suhu).toFixed(1) : "0.0"}<span className="text-[16px] text-tertiary-fixed ml-1">°C</span>
                                                         </div>
                                                     </div>
                                                     <span className="material-symbols-outlined text-tertiary-fixed/30 text-4xl group-hover:text-tertiary-fixed/70 transition-colors">device_thermostat</span>
@@ -1409,7 +1457,7 @@
                                                     <div>
                                                         <span className="font-label-caps text-[10px] text-on-surface-variant uppercase mb-1 block">Respiration</span>
                                                         <div className="font-data-display text-[28px] text-white">
-                                                            {currentUser.resp || "0"}<span className="text-[14px] text-on-surface-variant ml-1 font-body-md">Br/M</span>
+                                                            {sensorData?.resp || "0"}<span className="text-[14px] text-on-surface-variant ml-1 font-body-md">Br/M</span>
                                                         </div>
                                                     </div>
                                                     <span className="material-symbols-outlined text-tertiary-fixed/30 text-4xl group-hover:text-tertiary-fixed/70 transition-colors">pulmonology</span>
@@ -1432,7 +1480,7 @@
                                                 <span className="font-label-caps text-[10px] sm:text-[11px] text-on-surface-variant uppercase mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[14px] text-[#ffb4ab]">bloodtype</span> Glukosa</span>
                                                 <div className="flex items-baseline gap-1.5">
                                                     <span className="font-data-display text-[28px] sm:text-[32px] text-white group-hover:text-[#ffb4ab] transition-colors">
-                                                        {currentUser.glukosa || "0"}
+                                                        {sensorData?.glukosa || "0"}
                                                     </span>
                                                     <span className="font-body-md text-[11px] text-on-surface-variant">mg/dL</span>
                                                 </div>
@@ -1441,7 +1489,7 @@
                                                 <span className="font-label-caps text-[10px] sm:text-[11px] text-on-surface-variant uppercase mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[14px] text-primary-fixed">experiment</span> Hemoglobin</span>
                                                 <div className="flex items-baseline gap-1.5">
                                                     <span className="font-data-display text-[28px] sm:text-[32px] text-white group-hover:text-primary-fixed transition-colors">
-                                                        {currentUser.hemoglobin ? currentUser.hemoglobin.toFixed(1) : "0.0"}
+                                                        {sensorData?.hemoglobin ? Number(sensorData.hemoglobin).toFixed(1) : "0.0"}
                                                     </span>
                                                     <span className="font-body-md text-[11px] text-on-surface-variant">g/dL</span>
                                                 </div>
@@ -1450,7 +1498,7 @@
                                                 <span className="font-label-caps text-[10px] sm:text-[11px] text-on-surface-variant uppercase mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[14px] text-tertiary-fixed">water_drop</span> Kolesterol</span>
                                                 <div className="flex items-baseline gap-1.5">
                                                     <span className="font-data-display text-[28px] sm:text-[32px] text-white group-hover:text-tertiary-fixed transition-colors">
-                                                        {currentUser.kolesterol || "0"}
+                                                        {sensorData?.kolesterol || "0"}
                                                     </span>
                                                     <span className="font-body-md text-[11px] text-on-surface-variant">mg/dL</span>
                                                 </div>
@@ -1459,7 +1507,7 @@
                                                 <span className="font-label-caps text-[10px] sm:text-[11px] text-on-surface-variant uppercase mb-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-[14px] text-secondary-fixed">opacity</span> Asam Urat</span>
                                                 <div className="flex items-baseline gap-1.5">
                                                     <span className="font-data-display text-[28px] sm:text-[32px] text-white group-hover:text-secondary-fixed transition-colors">
-                                                        {currentUser.asam_urat ? currentUser.asam_urat.toFixed(1) : "0.0"}
+                                                        {sensorData?.asam_urat ? Number(sensorData.asam_urat).toFixed(1) : "0.0"}
                                                     </span>
                                                     <span className="font-body-md text-[11px] text-on-surface-variant">mg/dL</span>
                                                 </div>
