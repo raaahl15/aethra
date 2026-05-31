@@ -261,8 +261,7 @@
         const EMAILJS_TEMPLATE_ID = 'template_9a2nt88'; 
         
         const EMAILJS_PUBLIC_KEY = 'Et7Lv4Fn__EKiU1gX';
-        const JSONBIN_BIN_ID  = "6a1a6eaf21f9ee59d29cb1fd";
-        const JSONBIN_API_KEY = "$2a$10$Alwabe3MTUitcPaJ8GNRmOG.dEIkrOEtyr1aobhYOoGZKbXWkYyM.";
+        const SHEETDB_URL = "https://sheetdb.io/api/v1/nbz6dg7b4tczb";
         // ============================================================================
 
         // --- PAGE: AUTH CONTAINER (VIRAL TIKTOK SPLIT-SCREEN ANIMATION) ---
@@ -1211,16 +1210,24 @@
 
             useEffect(() => {
                 var fetchSensor = function() {
-                    if (JSONBIN_BIN_ID === "GANTI_BIN_ID_KAMU") return;
-                    fetch("https://api.jsonbin.io/v3/b/" + JSONBIN_BIN_ID + "/latest", {
-                        headers: { "X-Master-Key": JSONBIN_API_KEY }
-                    })
+                    fetch(SHEETDB_URL)
                     .then(function(res) {
-                        if (!res.ok) throw new Error("HTTP " + res.status);
                         return res.json();
                     })
                     .then(function(json) {
-                        setSensorData(json.record);
+                        var row = json[0];
+                        setSensorData({
+                            suhu:         parseFloat(row.suhu)         || 0,
+                            bpm:          parseInt(row.bpm)            || 0,
+                            spo2:         parseInt(row.spo2)           || 0,
+                            resp:         parseInt(row.resp)           || 0,
+                            bp_sistolik:  parseInt(row.bp_sistolik)    || 0,
+                            bp_diastolik: parseInt(row.bp_diastolik)   || 0,
+                            glukosa:      parseInt(row.glukosa)        || 0,
+                            kolesterol:   parseInt(row.kolesterol)     || 0,
+                            asam_urat:    parseFloat(row.asam_urat)    || 0,
+                            hemoglobin:   parseFloat(row.hemoglobin)   || 0
+                        });
                         setLastUpdate(new Date().toLocaleTimeString('id-ID', { hour12: false }));
                         setSensorStatus('online');
                     })
